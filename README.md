@@ -55,13 +55,25 @@ Control processes are what defines how the traffic is handled by the switch. cur
     `Layer`: represents the layer this process handles
     `Name`: name of the process
 
-- Control Processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
-- The Control Process is a pipeline process as described here (https://github.com/m-motawea/pipeline)
+- Control processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
+- The Control process is a pipeline process as described here (https://github.com/m-motawea/pipeline)
 - The content strucure of the PipelineMessage in the switch pipeline is defined in `github.com/m-motawea/l2_switch/controlplane`
+
 ```go
 type ControlMessage struct {
 	InFrame *dataplane.IncomingFrame
 	OutPorts []*dataplane.SwitchPort
 	ParentSwitch *Switch
 }
+```
+
+- Control processes are registered in `proc.go` in the `RegisterProcs()` as below:
+
+```go
+HubProcFuncPair := controlplane.ControlProcessFuncPair {
+		InFunc: l2.HubInProc,
+		OutFunc: l2.HubOutProc,
+	}
+	
+registerLayerProc(2, "Hub", HubProcFuncPair)
 ```
