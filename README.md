@@ -50,7 +50,8 @@ This represents the ports that will be added to the switch.
 - `Trunk`: whether the port is trunk or access port (not implemented yet)
 
 - `AllowedVLANs`: in case Trunk is false, specify only one vlan number, otherwise it includes the allowed vlans on the trunk (eg. `[10, 11, 12]`)
-    - `Up`: represents the initial status of the port whether it should be brought up on startup or not
+
+- `Up`: represents the initial status of the port whether it should be brought up on startup or not
 
 
 #### 3- ControlProcess:
