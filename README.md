@@ -46,14 +46,21 @@ Redis is the backend datastore for this switch during runtime.
 
 #### 2- SwitchPorts:
 This represents the ports that will be added to the switch.
+
     - `Trunk`: whether the port is trunk or access port (not implemented yet)
+    
     - `AllowedVLANs`: in case Trunk is false, specify only one vlan number, otherwise it includes the allowed vlans on the trunk (eg. `[10, 11, 12]`)
+    
     - `Up`: represents the initial status of the port whether it should be brought up on startup or not
+
 
 #### 3- ControlProcess:
 Control processes are what defines how the traffic is handled by the switch. currently only a L2 Hub is implemented.
+
     - `Layer`: represents the layer this process handles
+    
     - `Name`: name of the process
+
 
 - Control processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
 - The Control process is a pipeline process as described here (https://github.com/m-motawea/pipeline)
