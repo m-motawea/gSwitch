@@ -11,15 +11,9 @@ func init() {
 	HubProcFuncPair := controlplane.ControlProcessFuncPair{
 		InFunc:  HubInProc,
 		OutFunc: HubOutProc,
-		Init:    HubInitFunc,
 	}
 
 	controlplane.RegisterLayerProc(2, "Hub", HubProcFuncPair)
-}
-
-func HubInitFunc(sw *controlplane.Switch) {
-	s := sw.Stor.GetStor(2, "Hub")
-	s["number"] = 0
 }
 
 func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
