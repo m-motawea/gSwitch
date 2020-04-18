@@ -107,7 +107,7 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
 
 ## TODO:
-1- Fix Trunk Forwarding
+1- Fix Trunk Packet Drop
 
 2- Add ARP Control Process
 
