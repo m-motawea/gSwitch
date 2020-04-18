@@ -24,7 +24,7 @@ type SwitchPort struct {
 	Conn         *raw.Conn
 	VLAN         int
 	Status       bool
-	OutBuf       chan []byte
+	OutBuf       chan *ethernet.Frame
 	Trunk        bool
 	AllowedVLANs []int
 	closeSend    chan int
@@ -32,25 +32,26 @@ type SwitchPort struct {
 }
 
 type IncomingFrame struct {
-	FRAME    []byte
+	// FRAME    []byte
+	FRAME    *ethernet.Frame
 	SRC_ADDR net.Addr
 	IN_PORT  *SwitchPort
 }
 
-func (s *SwitchPort)setSendVlanTag(frame []byte) []byte{
-	var f ethernet.Frame
-	if err := (&f).UnmarshalBinary(frame); err != nil {
-		log.Printf("failed to unmarshal ethernet frame: %v", err)
-		return frame
-	}
+func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
+	// var f ethernet.Frame
+	// if err := (&f).UnmarshalBinary(frame); err != nil {
+	// 	log.Printf("failed to unmarshal ethernet frame: %v", err)
+	// 	return frame
+	// }
 	if s.Trunk {
 		// In case of Trunk Port
-		if (f.VLAN == nil) {
+		if f.VLAN == nil {
 			// if no vlan tag added it will add the Native VLAN tag
 			vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
 			f.VLAN = &vlan
 			b, err := f.MarshalBinary()
-			if (err != nil) {
+			if err != nil {
 				log.Printf("failed to marshal frame after adding VLAN in trunk")
 				return []byte{}
 			}
@@ -58,21 +59,26 @@ func (s *SwitchPort)setSendVlanTag(frame []byte) []byte{
 		} else {
 			// If there is VLAN Tag specified it will check whether it is allowed on this port or not
 			var FOUND bool
-			for _, id := range(s.AllowedVLANs) {
-				if (id == int(f.VLAN.ID)) {
+			for _, id := range s.AllowedVLANs {
+				if id == int(f.VLAN.ID) {
 					FOUND = true
-					break;
+					break
 				}
 			}
 			if FOUND {
-				return frame
+				b, err := f.MarshalBinary()
+				if err != nil {
+					log.Printf("failed to marshal frame after adding VLAN in trunk")
+					return []byte{}
+				}
+				return b
 			} else {
 				return []byte{}
 			}
 		}
 	} else {
 		// In case of Access Port
-		if (f.VLAN != nil) {
+		if f.VLAN != nil {
 			if f.VLAN.ID != uint16(s.VLAN) {
 				// Discard
 				return []byte{}
@@ -81,67 +87,66 @@ func (s *SwitchPort)setSendVlanTag(frame []byte) []byte{
 			log.Print("Stripping VLAN Tag on Port %s", s.Name)
 			f.VLAN = nil
 			b, err := f.MarshalBinary()
-			if (err != nil) {
+			if err != nil {
 				log.Printf("failed to marshal frame after adding VLAN in trunk")
 				return []byte{}
 			}
 			return b
 		}
-		return frame
-	}
-	return frame
-}
-
-func (s *SwitchPort) setRecvVlanTag(frame []byte) []byte{
-	var f ethernet.Frame
-	if err := (&f).UnmarshalBinary(frame); err != nil {
-		log.Printf("failed to unmarshal ethernet frame: %v", err)
-		return frame
-	}
-
-	if s.Trunk {
-		// In case of Trunk Port
-		if (f.VLAN == nil) {
-			// if no vlan tag added it will add the Native VLAN tag
-			vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
-			f.VLAN = &vlan
-			b, err := f.MarshalBinary()
-			if (err != nil) {
-				log.Printf("failed to marshal frame after adding VLAN in trunk")
-				return []byte{}
-			}
-			return b
-		} else {
-			// If there is VLAN Tag specified it will check whether it is allowed on this port or not
-			var FOUND bool
-			for _, id := range(s.AllowedVLANs) {
-				if (id == int(f.VLAN.ID)) {
-					FOUND = true
-					break;
-				}
-			}
-			if FOUND {
-				return frame
-			} else {
-				return []byte{}
-			}
-		}
-	} else {
-		// In case of Access Port
-		if (f.VLAN != nil) {
-			// Discard
-			return []byte{}
-		}
-		// Set VLAN Tag of the Port
-		vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
-		f.VLAN = &vlan
 		b, err := f.MarshalBinary()
-		log.Printf("Setting VLAN on Port %s to %v", s.Name, vlan)
-		if (err != nil) {
+		if err != nil {
 			log.Printf("failed to marshal frame after adding VLAN in trunk")
 			return []byte{}
 		}
 		return b
+	}
+	b, err := f.MarshalBinary()
+	if err != nil {
+		log.Printf("failed to marshal frame after adding VLAN in trunk")
+		return []byte{}
+	}
+	return b
+}
+
+func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
+	var f ethernet.Frame
+	if err := (&f).UnmarshalBinary(frame); err != nil {
+		log.Printf("failed to unmarshal ethernet frame: %v", err)
+		return &f
+	}
+
+	if s.Trunk {
+		// In case of Trunk Port
+		if f.VLAN == nil {
+			// if no vlan tag added it will add the Native VLAN tag
+			vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
+			f.VLAN = &vlan
+			return &f
+		} else {
+			// If there is VLAN Tag specified it will check whether it is allowed on this port or not
+			var FOUND bool
+			for _, id := range s.AllowedVLANs {
+				if id == int(f.VLAN.ID) {
+					FOUND = true
+					break
+				}
+			}
+			if FOUND {
+				return &f
+			} else {
+				return nil
+			}
+		}
+	} else {
+		// In case of Access Port
+		if f.VLAN != nil {
+			// Discard
+			return nil
+		}
+		// Set VLAN Tag of the Port
+		vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
+		f.VLAN = &vlan
+		return &f
 	}
 }
 
@@ -155,7 +160,7 @@ func (s *SwitchPort) SendLoop(close chan int) {
 		default:
 			frame := <-s.OutBuf
 			outFrame := s.setSendVlanTag(frame)
-			if (len(outFrame) == 0) {
+			if len(outFrame) == 0 {
 				continue
 			}
 			n, err := s.Conn.WriteTo(outFrame, s.Conn.LocalAddr())
@@ -182,7 +187,7 @@ func (s *SwitchPort) RecvLoop(controlChannel chan IncomingFrame, close chan int)
 			} else {
 				log.Printf("%d bytes received on port %s", n, s.Name)
 				frame := s.setRecvVlanTag(buf[:n])
-				if len(frame) == 0 {
+				if frame == nil {
 					continue
 				}
 				f_pair := IncomingFrame{
@@ -196,7 +201,7 @@ func (s *SwitchPort) RecvLoop(controlChannel chan IncomingFrame, close chan int)
 	}
 }
 
-func (s *SwitchPort) Out(frame []byte) {
+func (s *SwitchPort) Out(frame *ethernet.Frame) {
 	s.OutBuf <- frame
 }
 
@@ -219,7 +224,7 @@ func NewSwitchPort(ifname string, isTrunk bool, vlans ...int) (SwitchPort, error
 	} else {
 		iface.VLAN = vlans[0]
 	}
-	iface.OutBuf = make(chan []byte, IFACE_BUFFER_SIZE)
+	iface.OutBuf = make(chan *ethernet.Frame, IFACE_BUFFER_SIZE)
 	return iface, nil
 }
 
