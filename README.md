@@ -99,7 +99,7 @@ type ProcStor map[string]interface{}
 
 - Control processes can access their stor using ```ParentSwitch``` in the control message as below:
 ```go
-ctrlMsg, _ := msg.Content.(controlplane.ControlMessage)
+msgContent, _ := msg.Content.(controlplane.ControlMessage)
 stor := msgContent.ParentSwitch.Stor.GetStor(2, "Hub")
 val := stor["number"]
 stor["number"] = val.(int) + 1
