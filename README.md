@@ -83,7 +83,7 @@ _ "github.com/m-motawea/gSwitch/l2"
 ```go
 func init() {
 	HubProcFuncPair := controlplane.ControlProcessFuncPair{
-		InFunc:  HubInProc,     // handles ingress traffic 
+	InFunc:  HubInProc,     // handles ingress traffic 
         OutFunc: HubOutProc,    // handles egress traffic
         Init:   HubInitFunc,    // initializes any requirements before the pipeline is started that takes (*controlplane.Switch) as parameter. can be nil 
 	}
