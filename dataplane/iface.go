@@ -10,7 +10,7 @@ import (
 )
 
 const ETH_P_ALL = 0x0003
-const IFACE_BUFFER_SIZE = 10
+const IFACE_BUFFER_SIZE = 50
 
 type Iface interface {
 	SendLoop(chan int)
@@ -58,7 +58,7 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 			var FOUND bool
 			for _, id := range s.AllowedVLANs {
 				if f.VLAN == nil {
-					break
+					return []byte{}
 				}
 				if id == int(f.VLAN.ID) {
 					FOUND = true
@@ -74,7 +74,6 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 				return b
 			} else {
 				log.Printf("trunk port %s sending: vlan id: %d not allowed on port %s", s.Name, f.VLAN.ID, s.Name)
-				log.Printf("vlan %d is not allowed on port %s. %v", f.VLAN.ID, s.Name, s.AllowedVLANs)
 				return []byte{}
 			}
 		}

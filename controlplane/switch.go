@@ -120,6 +120,7 @@ func (sw *Switch) DelSwitchPort(name string) {
 }
 
 func (sw *Switch) SwitchLoop() {
+	go sw.ConsumerLoop()
 	for {
 		select {
 		case <-sw.closeChan:
@@ -139,6 +140,15 @@ func (sw *Switch) SwitchLoop() {
 			sw.controlPipe.SendMessage(pipeMsg)
 			log.Println("Control Plane: message sent to pipeline")
 			continue
+		}
+	}
+}
+
+func (sw *Switch) ConsumerLoop() {
+	for {
+		select {
+		case <-sw.closeChan:
+			return
 		case pipeMsg := <-sw.consumeChannel:
 			// processed msg from pipeline
 			log.Println("Control Plane: received pipeline message. sending out to dataplane...")
