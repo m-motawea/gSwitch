@@ -1,7 +1,6 @@
 package l2
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"time"
@@ -61,7 +60,6 @@ func (mt *MACTable) SetEntry(addr string, port *dataplane.SwitchPort) *MACEntry 
 		LastRefreshed: t,
 	}
 	mt.Table[addr] = ent
-	fmt.Printf("Entry set %v", ent)
 	return ent
 }
 

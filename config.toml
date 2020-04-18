@@ -19,7 +19,6 @@ Prefix = ""
     [SwitchPorts.sw3]
     Trunk = false
     AllowedVLANs = [10]
-    NativeVLAN = 1
     Up = true
 
     [SwitchPorts.sw4]

@@ -10,6 +10,13 @@ import (
 )
 
 func main() {
+	f, err := os.OpenFile("gSwitch.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
 	var wg sync.WaitGroup
 	configPath := "config.toml"
 	if len(os.Args) > 1 {

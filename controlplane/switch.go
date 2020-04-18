@@ -126,6 +126,7 @@ func (sw *Switch) SwitchLoop() {
 			return
 		case inFrame := <-sw.dataPlaneChan:
 			// incoming frames from ports
+			log.Println("Control Plane: received dataplane message. sending to pipline...")
 			ctrlMsg := ControlMessage{
 				InFrame:      &inFrame,
 				OutPorts:     []*dataplane.SwitchPort{},
@@ -136,16 +137,21 @@ func (sw *Switch) SwitchLoop() {
 				Content:   ctrlMsg,
 			}
 			sw.controlPipe.SendMessage(pipeMsg)
+			log.Println("Control Plane: message sent to pipeline")
 			continue
 		case pipeMsg := <-sw.consumeChannel:
 			// processed msg from pipeline
+			log.Println("Control Plane: received pipeline message. sending out to dataplane...")
 			ctrlMsg, ok := pipeMsg.Content.(ControlMessage)
 			if !ok {
 				log.Fatal("Switch Loop Received Incompatible Message!")
 			}
 			for _, port := range ctrlMsg.OutPorts {
+				log.Printf("Control Plane: sending msg to port %s...", port.Name)
 				port.Out(ctrlMsg.InFrame.FRAME)
+				log.Printf("Control Plane: msg send to port %s.", port.Name)
 			}
+			log.Println("Control Plane: message sent to dataplane")
 		}
 	}
 }

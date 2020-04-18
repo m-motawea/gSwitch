@@ -43,7 +43,8 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 		// In case of Trunk Port
 		if f.VLAN == nil {
 			// if no vlan tag added it will add the Native VLAN tag
-			vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
+			log.Printf("trunk port %s sending: no vlan tag assigned. assigning native vlan %d", s.Name, s.AllowedVLANs[0])
+			vlan := ethernet.VLAN{ID: uint16(s.AllowedVLANs[0])}
 			f.VLAN = &vlan
 			b, err := f.MarshalBinary()
 			if err != nil {
@@ -53,8 +54,12 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 			return b
 		} else {
 			// If there is VLAN Tag specified it will check whether it is allowed on this port or not
+			log.Printf("trunk port %s sending: vlan tag found. id: %d", s.Name, f.VLAN.ID)
 			var FOUND bool
 			for _, id := range s.AllowedVLANs {
+				if f.VLAN == nil {
+					break
+				}
 				if id == int(f.VLAN.ID) {
 					FOUND = true
 					break
@@ -68,6 +73,7 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 				}
 				return b
 			} else {
+				log.Printf("trunk port %s sending: vlan id: %d not allowed on port %s", s.Name, f.VLAN.ID, s.Name)
 				log.Printf("vlan %d is not allowed on port %s. %v", f.VLAN.ID, s.Name, s.AllowedVLANs)
 				return []byte{}
 			}
@@ -77,11 +83,11 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 		if f.VLAN != nil {
 			if int(f.VLAN.ID) != s.VLAN {
 				// Discard
-				log.Printf("vlan %d is not configured on port %s. %d", f.VLAN.ID, s.Name, s.VLAN)
+				log.Printf("access port %s sending: vlan tag found. id: %d. Discarding", s.Name, f.VLAN.ID)
 				return []byte{}
 			}
 			// Strip VLAN Tag
-			log.Print("Stripping VLAN Tag on Port %s", s.Name)
+			log.Printf("access port %s sending: Stripping VLAN Tag.", s.Name)
 			f.VLAN = nil
 			b, err := f.MarshalBinary()
 			if err != nil {
@@ -117,6 +123,7 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 		log.Printf("receiving on trunk port %s", s.Name)
 		if f.VLAN == nil {
 			// if no vlan tag added it will add the Native VLAN tag
+			log.Printf("trunk port %s receiving: no vlan tag assigned. assigning native vlan %d", s.Name, s.AllowedVLANs[0])
 			if len(s.AllowedVLANs) == 0 {
 				return nil
 			}
@@ -125,6 +132,7 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 			return &f
 		} else {
 			// If there is VLAN Tag specified it will check whether it is allowed on this port or not
+			log.Printf("trunk port %s receiving: vlan tag found. id: %d", s.Name, f.VLAN.ID)
 			var FOUND bool
 			for _, id := range s.AllowedVLANs {
 				if id == int(f.VLAN.ID) {
@@ -135,6 +143,7 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 			if FOUND {
 				return &f
 			} else {
+				log.Printf("trunk port %s receiving: vlan id: %d not allowed on port %s", s.Name, f.VLAN.ID, s.Name)
 				return nil
 			}
 		}
@@ -142,6 +151,7 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 		// In case of Access Port
 		if f.VLAN != nil {
 			// Discard
+			log.Printf("access port %s receiving: vlan tag found. id: %d. Discarding", s.Name, f.VLAN.ID)
 			return nil
 		}
 		// Set VLAN Tag of the Port
