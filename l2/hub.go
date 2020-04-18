@@ -7,6 +7,21 @@ import (
 	"github.com/m-motawea/pipeline"
 )
 
+func init() {
+	HubProcFuncPair := controlplane.ControlProcessFuncPair{
+		InFunc:  HubInProc,
+		OutFunc: HubOutProc,
+		Init:    HubInitFunc,
+	}
+
+	controlplane.RegisterLayerProc(2, "Hub", HubProcFuncPair)
+}
+
+func HubInitFunc(sw *controlplane.Switch) {
+	s := sw.Stor.GetStor(2, "Hub")
+	s["number"] = 0
+}
+
 func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	msgContent, ok := msg.Content.(controlplane.ControlMessage)
 	if !ok {
@@ -26,6 +41,10 @@ func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipe
 		msgContent.OutPorts = append(msgContent.OutPorts, port)
 	}
 	msg.Content = msgContent
+	stor := msgContent.ParentSwitch.Stor.GetStor(2, "Hub")
+	val := stor["number"]
+	stor["number"] = val.(int) + 1
+	log.Printf("\n\nHub Stor: %v \n\n", stor)
 	return msg
 }
 

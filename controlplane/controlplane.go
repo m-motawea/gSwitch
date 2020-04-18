@@ -14,6 +14,19 @@ type ControlMessage struct {
 type ControlProcessFuncPair struct {
 	InFunc  func(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage
 	OutFunc func(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage
+	Init    func(sw *Switch)
 }
 
 var ControlProcs map[int]map[string]ControlProcessFuncPair
+
+func init() {
+	ControlProcs = map[int]map[string]ControlProcessFuncPair{}
+}
+
+func RegisterLayerProc(layer int, name string, pair ControlProcessFuncPair) {
+	_, ok := ControlProcs[layer]
+	if !ok {
+		ControlProcs[layer] = map[string]ControlProcessFuncPair{}
+	}
+	ControlProcs[layer][name] = pair
+}

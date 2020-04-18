@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-	RegisterProcs()
 	var wg sync.WaitGroup
 	configPath := "config.toml"
 	if len(os.Args) > 1 {

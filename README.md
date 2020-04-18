@@ -74,13 +74,34 @@ type ControlMessage struct {
 }
 ```
 
-- Control processes are registered in `proc.go` in the `RegisterProcs()` as below:
-
+- Control processes are registered in `proc.go` by importing them as:
 ```go
-HubProcFuncPair := controlplane.ControlProcessFuncPair {
-		InFunc: l2.HubInProc,
-		OutFunc: l2.HubOutProc,
+_ "github.com/m-motawea/gSwitch/l2"
+```
+
+- Control processes implement ```init()``` function in their respective files that registers their pair in the control plane
+```go
+func init() {
+	HubProcFuncPair := controlplane.ControlProcessFuncPair{
+		InFunc:  HubInProc,     // handles ingress traffic 
+        OutFunc: HubOutProc,    // handles egress traffic
+        Init:   HubInitFunc,    // initializes any requirements before the pipeline is started that takes (*controlplane.Switch) as parameter. can be nil 
 	}
-	
-registerLayerProc(2, "Hub", HubProcFuncPair)
+
+	controlplane.RegisterLayerProc(2, "Hub", HubProcFuncPair)
+}
+```
+
+- Each control process has map type storage for their presistence requirements defined as:
+```go
+type ProcStor map[string]interface{}
+```
+
+- Control processes can access their stor using ```ParentSwitch``` in the control message as below:
+```go
+ctrlMsg, _ := msg.Content.(controlplane.ControlMessage)
+stor := msgContent.ParentSwitch.Stor.GetStor(2, "Hub")
+val := stor["number"]
+stor["number"] = val.(int) + 1
+log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```

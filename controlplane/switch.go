@@ -11,14 +11,41 @@ import (
 	"github.com/m-motawea/pipeline"
 )
 
-type MACTable map[string]*dataplane.SwitchPort // mac address string to *port
-type SwitchTable map[int]MACTable              // vlan id to mac table
+type ProcStor map[string]interface{} // Key to Val
+
+type LayerStor map[string]ProcStor // Proc Name to ProcStro
+
+type SwitchProcStor map[int]LayerStor // Layer Number to LayerStor
+
+func (swStor SwitchProcStor) getLayerStor(layer int) LayerStor {
+	ls, ok := swStor[layer]
+	if !ok {
+		ls = LayerStor{}
+		swStor[layer] = ls
+	}
+	return ls
+}
+
+func (ls LayerStor) getProcStor(name string) ProcStor {
+	ps, ok := ls[name]
+	if !ok {
+		ps = ProcStor{}
+		ls[name] = ps
+	}
+	return ps
+}
+
+func (swStor SwitchProcStor) GetStor(layer int, name string) ProcStor {
+	ls := swStor.getLayerStor(layer)
+	ps := ls.getProcStor(name)
+	return ps
+}
 
 type Switch struct {
 	Name           string
 	Ports          map[string]*dataplane.SwitchPort
+	Stor           SwitchProcStor
 	controlPipe    *pipeline.Pipeline
-	Table          SwitchTable
 	wg             *sync.WaitGroup
 	dataPlaneChan  chan dataplane.IncomingFrame
 	consumeChannel pipeline.PipelineChannel
@@ -34,8 +61,8 @@ func NewSwitch(name string, cfg config.Config, wg *sync.WaitGroup) *Switch {
 func (sw *Switch) initSwitch(name string, cfg config.Config, wg *sync.WaitGroup) {
 	log.Printf("intializing switch: %s", sw.Name)
 	sw.Name = name
-	sw.Table = SwitchTable{}
 	sw.wg = wg
+	sw.Stor = SwitchProcStor{}
 	sw.Ports = map[string]*dataplane.SwitchPort{}
 	sw.dataPlaneChan = make(chan dataplane.IncomingFrame)
 	sw.consumeChannel = make(pipeline.PipelineChannel)
@@ -56,6 +83,9 @@ func (sw *Switch) initSwitch(name string, cfg config.Config, wg *sync.WaitGroup)
 		}
 		// add the process to the contolplane pipline
 		sw.controlPipe.AddProcess(&proc)
+		if pair.Init != nil {
+			pair.Init(sw)
+		}
 	}
 }
 
