@@ -95,7 +95,7 @@ func (st SwitchMACTable) GetVlanEntry(vlan int, addr string) *MACEntry {
 	return vlanTable.GetEntry(addr)
 }
 
-func (st SwitchMACTable) GetOutPort(frame *ethernet.Frame, sw *controlplane.Switch) []*dataplane.SwitchPort {
+func (st SwitchMACTable) GetOutPort(frame *ethernet.Frame, sw *controlplane.Switch, inPort *dataplane.SwitchPort) []*dataplane.SwitchPort {
 	log.Println("=============================================================================================")
 	outPorts := []*dataplane.SwitchPort{}
 	vlanObj := frame.VLAN
@@ -111,6 +111,9 @@ func (st SwitchMACTable) GetOutPort(frame *ethernet.Frame, sw *controlplane.Swit
 	} else {
 		log.Println("Couldn't find Entry!")
 		for _, port := range sw.Ports {
+			if port == inPort {
+				continue
+			}
 			outPorts = append(outPorts, port)
 		}
 	}
@@ -183,7 +186,8 @@ func L2SwitchOutFunc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "L2Switch")
 	st := stor["SwitchTable"].(SwitchMACTable)
 	frame := msgContent.InFrame.FRAME
-	outPorts := st.GetOutPort(frame, msgContent.ParentSwitch)
+	inPort := msgContent.InFrame.IN_PORT
+	outPorts := st.GetOutPort(frame, msgContent.ParentSwitch, inPort)
 
 	msgContent.OutPorts = outPorts
 	msg.Content = msgContent
