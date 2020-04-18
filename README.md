@@ -130,7 +130,7 @@ go build
 
 3- Initialize a test environment by network namespaces:
 ```bash
-sudo ./scripts/env_Setup.sh
+sudo ./scripts/env_setup.sh
 ```
 * this will create 5 namespaces as hosts (`h1`,..`h5`) and a one as switch `sw`
 * `h1` & `h2` IP address are `10.1.1.10` and `10.1.1.20`
@@ -150,4 +150,9 @@ sudo ip netns exec sw ./gSwitch
 ```bash
 sudo ip netns exec h1 ping 10.1.1.20 # connection to h2
 sudo ip netns exec h1 ping 10.1.1.50 # connection to h5
+```
+
+6- Clean the test environment:
+```bash
+sudo ./scripts/env_destroy.sh
 ```
