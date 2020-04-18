@@ -118,18 +118,18 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 
 ## Try It:
 1- Get the Package
-```
-go get https://github.com/m-motawea/gSwitch
+```bash
+go get github.com/m-motawea/gSwitch
 ```
 
 2- Go the package dir and build it
-```
+```bash
 cd ~/go/src/github.com/m-motawea/gSwitch # change the location if you installed go in a custom location
 go build
 ```
 
 3- Initialize a test environment by network namespaces:
-```
+```bash
 sudo ./scripts/env_Setup.sh
 ```
 * this will create 5 namespaces as hosts (`h1`,..`h5`) and a one as switch `sw`
@@ -138,7 +138,7 @@ sudo ./scripts/env_Setup.sh
 * `h5` IP addresses are `10.1.1.50` and `10.10.1.50` on vlans 1 and 10 respectively
 
 4- Start the switch in the `sw` namepace with the default config in the package:
-```
+```bash
 sudo ip netns exec sw ./gSwitch
 ```
 * `h1` and `h2` are connected to `sw` as access ports on vlan 1
@@ -147,7 +147,7 @@ sudo ip netns exec sw ./gSwitch
 * Control processes include the `L2Switch` only
 
 5- Test connectivity example:
-```
+```bash
 sudo ip netns exec h1 ping 10.1.1.20 # connection to h2
 sudo ip netns exec h1 ping 10.1.1.50 # connection to h5
 ```
