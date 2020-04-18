@@ -39,6 +39,7 @@ type IncomingFrame struct {
 
 func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 	if s.Trunk {
+		log.Printf("sending out of trunk port %s", s.Name)
 		// In case of Trunk Port
 		if f.VLAN == nil {
 			// if no vlan tag added it will add the Native VLAN tag
@@ -67,14 +68,16 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 				}
 				return b
 			} else {
+				log.Printf("vlan %d is not allowed on port %s. %v", f.VLAN.ID, s.Name, s.AllowedVLANs)
 				return []byte{}
 			}
 		}
 	} else {
 		// In case of Access Port
 		if f.VLAN != nil {
-			if f.VLAN.ID != uint16(s.VLAN) {
+			if int(f.VLAN.ID) != s.VLAN {
 				// Discard
+				log.Printf("vlan %d is not configured on port %s. %d", f.VLAN.ID, s.Name, s.VLAN)
 				return []byte{}
 			}
 			// Strip VLAN Tag
@@ -111,9 +114,13 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 
 	if s.Trunk {
 		// In case of Trunk Port
+		log.Printf("receiving on trunk port %s", s.Name)
 		if f.VLAN == nil {
 			// if no vlan tag added it will add the Native VLAN tag
-			vlan := ethernet.VLAN{ID: uint16(s.VLAN)}
+			if len(s.AllowedVLANs) == 0 {
+				return nil
+			}
+			vlan := ethernet.VLAN{ID: uint16(s.AllowedVLANs[0])}
 			f.VLAN = &vlan
 			return &f
 		} else {

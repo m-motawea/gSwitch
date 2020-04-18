@@ -27,6 +27,11 @@ Prefix = ""
     AllowedVLANs = [10]
     Up = true
 
+    [SwitchPorts.sw5]
+    Trunk = true
+    AllowedVLANs = [1, 10]
+    Up = true
+
 
 [[ControlProcess]]
 Layer = 2
