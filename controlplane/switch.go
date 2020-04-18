@@ -12,10 +12,14 @@ import (
 	
 )
 
+type MACTable map[string]*dataplane.SwitchPort // mac address string to *port
+type SwitchTable map[int]MACTable // vlan id to mac table
+
 type Switch struct {
 	Name string
 	Ports map[string]*dataplane.SwitchPort
 	controlPipe *pipeline.Pipeline
+	Table SwitchTable
 	wg *sync.WaitGroup
 	dataPlaneChan chan dataplane.IncomingFrame
 	consumeChannel pipeline.PipelineChannel
@@ -31,6 +35,7 @@ func NewSwitch(name string, cfg config.Config, wg *sync.WaitGroup) *Switch{
 func (sw *Switch)initSwitch(name string, cfg config.Config, wg *sync.WaitGroup) {
 	log.Printf("intializing switch: %s", sw.Name)
 	sw.Name = name
+	sw.Table = SwitchTable{}
 	sw.wg = wg
 	sw.Ports = map[string]*dataplane.SwitchPort{}
 	sw.dataPlaneChan = make(chan dataplane.IncomingFrame)
