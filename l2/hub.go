@@ -41,10 +41,6 @@ func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipe
 		msgContent.OutPorts = append(msgContent.OutPorts, port)
 	}
 	msg.Content = msgContent
-	stor := msgContent.ParentSwitch.Stor.GetStor(2, "Hub")
-	val := stor["number"]
-	stor["number"] = val.(int) + 1
-	log.Printf("\n\nHub Stor: %v \n\n", stor)
 	return msg
 }
 
