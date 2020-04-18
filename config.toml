@@ -35,4 +35,4 @@ Prefix = ""
 
 [[ControlProcess]]
 Layer = 2
-Name = "Hub"
+Name = "L2Switch"
