@@ -32,18 +32,12 @@ type SwitchPort struct {
 }
 
 type IncomingFrame struct {
-	// FRAME    []byte
 	FRAME    *ethernet.Frame
 	SRC_ADDR net.Addr
 	IN_PORT  *SwitchPort
 }
 
 func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
-	// var f ethernet.Frame
-	// if err := (&f).UnmarshalBinary(frame); err != nil {
-	// 	log.Printf("failed to unmarshal ethernet frame: %v", err)
-	// 	return frame
-	// }
 	if s.Trunk {
 		// In case of Trunk Port
 		if f.VLAN == nil {

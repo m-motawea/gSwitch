@@ -3,7 +3,7 @@ package l2
 import (
 	"log"
 
-	"github.com/m-motawea/l2_switch/controlplane"
+	"github.com/m-motawea/gSwitch/controlplane"
 	"github.com/m-motawea/pipeline"
 )
 
@@ -15,8 +15,8 @@ func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipe
 		return msg
 	}
 	log.Println("Hub Proc Received a Message.")
-	for _, port := range(msgContent.ParentSwitch.Ports) {
-		if (port == msgContent.InFrame.IN_PORT) {
+	for _, port := range msgContent.ParentSwitch.Ports {
+		if port == msgContent.InFrame.IN_PORT {
 			log.Println("Hub Proc Excluded IN PORT")
 			continue
 		}
@@ -32,4 +32,3 @@ func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipe
 func HubOutProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	return msg
 }
-

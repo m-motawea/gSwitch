@@ -5,8 +5,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/m-motawea/l2_switch/config"
-	"github.com/m-motawea/l2_switch/controlplane"
+	"github.com/m-motawea/gSwitch/config"
+	"github.com/m-motawea/gSwitch/controlplane"
 )
 
 func main() {
@@ -23,10 +23,10 @@ func main() {
 	log.Printf("Config: %v", CONFIG)
 	sw := controlplane.NewSwitch("main switch", CONFIG, &wg)
 	sw.Start()
-	for name, portCfg := range(CONFIG.SwitchPorts) {
+	for name, portCfg := range CONFIG.SwitchPorts {
 		sw.AddSwitchPort(name, portCfg)
 		if portCfg.Up {
-			sw.UpPort(name)	
+			sw.UpPort(name)
 		}
 	}
 	wg.Wait()
