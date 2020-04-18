@@ -104,7 +104,7 @@ func (st SwitchMACTable) GetOutPort(frame *ethernet.Frame, sw *controlplane.Swit
 		vlan = int(vlanObj.ID)
 	}
 	addr := frame.Destination.String()
-	log.Printf("Getting OutPort for addr %s", addr)
+	log.Printf("Getting OutPort for addr %s, vlan %d", addr, vlan)
 	entry := st.GetVlanEntry(vlan, addr)
 	if entry != nil {
 		outPorts = append(outPorts, entry.Port)
