@@ -105,3 +105,8 @@ val := stor["number"]
 stor["number"] = val.(int) + 1
 log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
+
+## TODO:
+	1- Fix Trunk Forwarding
+	2- Add ARP Control Process
+	3- Add Static Routing Process
