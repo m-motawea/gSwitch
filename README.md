@@ -55,7 +55,7 @@ This represents the ports that will be added to the switch.
 
 
 #### 3- ControlProcess:
-Control processes are what defines how the traffic is handled by the switch. currently only a L2 Hub is implemented.
+Control processes are what defines how the traffic is handled by the switch. currently only a `L2Hub` and `L2Switch` are implemented.
 
 - `Layer`: represents the layer this process handles
 
