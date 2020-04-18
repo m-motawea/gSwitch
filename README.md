@@ -55,7 +55,7 @@ This represents the ports that will be added to the switch.
 
 
 #### 3- ControlProcess:
-Control processes are what defines how the traffic is handled by the switch. currently only a L2 Hub is implemented.
+Control processes are what defines how the traffic is handled by the switch. currently only a `L2Hub` and `L2Switch` are implemented.
 
 - `Layer`: represents the layer this process handles
 
@@ -105,3 +105,12 @@ val := stor["number"]
 stor["number"] = val.(int) + 1
 log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
+
+## TODO:
+1- Fix Trunk Forwarding
+
+2- Add ARP Control Process
+
+3- Add Static Routing Process
+
+4- Save and Load Config from Redis
