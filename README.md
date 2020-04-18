@@ -112,3 +112,5 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 2- Add ARP Control Process
 
 3- Add Static Routing Process
+
+4- Save and Load Config from Redis
