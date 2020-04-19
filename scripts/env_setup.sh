@@ -36,6 +36,8 @@ ip -n h5 link set dev h5 up
 # h5-sw5 trunk
 ip -n h5 link add link h5 name h5.1 type vlan id 1
 ip -n h5 link add link h5 name h5.10 type vlan id 10
+ip -n sw link add link sw5 name sw5.1 type vlan id 1
+ip -n sw link add link sw5 name sw5.10 type vlan id 10
 
 
 ip -n sw link set dev sw1 up
@@ -43,6 +45,10 @@ ip -n sw link set dev sw2 up
 ip -n sw link set dev sw3 up
 ip -n sw link set dev sw4 up
 ip -n sw link set dev sw5 up
+ip -n sw link set dev sw5.1 up
+ip -n sw link set dev sw5.10 up
+ip -n h5 link set dev h5.1 up
+ip -n h5 link set dev h5.10 up
 
 ip -n h1 addr add 10.1.1.10/24 dev h1
 ip -n h2 addr add 10.1.1.20/24 dev h2
@@ -50,7 +56,3 @@ ip -n h3 addr add 10.10.1.30/24 dev h3
 ip -n h4 addr add 10.10.1.40/24 dev h4
 ip -n h5 addr add 10.1.1.50/24 dev h5.1
 ip -n h5 addr add 10.10.1.50/24 dev h5.10
-
-ip -n h5 link set dev h5.1 up
-ip -n h5 link set dev h5.10 up
-
