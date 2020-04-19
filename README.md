@@ -107,7 +107,7 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
 
 ## TODO:
-1- Fix Trunk Missing VLAN Tag upon Reveive (maybe vlan interfaces with separate sockets bound instead of one)
+1- Fix Trunk Ports (due to stripped vlan tags)
 * currently trunk link is not working but to get around this you can use subinterfaces.
 * create a sub interface for each vlan and use the sub interface in configuration instaed of the Master.
 ```bash
