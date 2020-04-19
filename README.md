@@ -108,6 +108,23 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 
 ## TODO:
 1- Fix Trunk Missing VLAN Tag upon Reveive (maybe vlan interfaces with separate sockets bound instead of one)
+* currently trunk link is not working but to get around this you can use subinterfaces.
+* create a sub interface for each vlan and use the sub interface in configuration instaed of the Master.
+```bash
+ip link add link <master> name <sub name> type vlan id <id>
+```
+* make sure to set the trunk option for the subinterface as `false` other wise there will be two layers of 802.1Q.
+```toml
+[SwitchPorts."sw5.10"]
+Trunk = false
+AllowedVLANs = [10]
+Up = true
+
+[SwitchPorts."sw5.1"]
+Trunk = false
+AllowedVLANs = [1]
+Up = true
+```
 
 2- Add ARP Control Process
 
