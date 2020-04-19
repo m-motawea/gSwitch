@@ -28,7 +28,7 @@ Prefix = ""
 
     [SwitchPorts.sw5]
     Trunk = true
-    AllowedVLANs = [1, 10]
+    AllowedVLANs = [10]
     Up = true
 
 

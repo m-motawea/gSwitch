@@ -30,6 +30,7 @@ func main() {
 	sw := controlplane.NewSwitch("main switch", CONFIG, &wg)
 	sw.Start()
 	for name, portCfg := range CONFIG.SwitchPorts {
+		log.Printf("Port %s config: %v", name, portCfg)
 		sw.AddSwitchPort(name, portCfg)
 		if portCfg.Up {
 			sw.UpPort(name)

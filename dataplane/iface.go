@@ -11,6 +11,7 @@ import (
 
 const ETH_P_ALL = 0x0003
 const IFACE_BUFFER_SIZE = 50
+const TYPE_802_1Q = 0x8100
 
 type Iface interface {
 	SendLoop(chan int)
@@ -111,6 +112,7 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 }
 
 func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
+	log.Printf("receiving on port %s, %v", s.Name, frame)
 	var f ethernet.Frame
 	if err := (&f).UnmarshalBinary(frame); err != nil {
 		log.Printf("failed to unmarshal ethernet frame: %v", err)
@@ -170,6 +172,7 @@ func (s *SwitchPort) SendLoop(close chan int) {
 		default:
 			frame := <-s.OutBuf
 			outFrame := s.setSendVlanTag(frame)
+			log.Printf("sending out of trunk port %s, %v", s.Name, outFrame)
 			if len(outFrame) == 0 {
 				continue
 			}
@@ -197,6 +200,7 @@ func (s *SwitchPort) RecvLoop(controlChannel chan IncomingFrame, close chan int)
 			} else {
 				log.Printf("%d bytes received on port %s", n, s.Name)
 				frame := s.setRecvVlanTag(buf[:n])
+				log.Printf("frame with VLAN %v", frame.VLAN)
 				if frame == nil {
 					continue
 				}
@@ -233,6 +237,7 @@ func NewSwitchPort(ifname string, isTrunk bool, vlans ...int) (SwitchPort, error
 		iface.AllowedVLANs = vlans
 	} else {
 		iface.VLAN = vlans[0]
+		iface.AllowedVLANs = vlans
 	}
 	iface.OutBuf = make(chan *ethernet.Frame, IFACE_BUFFER_SIZE)
 	return iface, nil

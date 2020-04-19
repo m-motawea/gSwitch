@@ -107,7 +107,7 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
 
 ## TODO:
-1- Fix Trunk Packet Drop
+1- Fix Trunk Missing VLAN Tag upon Reveive
 
 2- Add ARP Control Process
 
@@ -149,7 +149,7 @@ sudo ip netns exec sw ./gSwitch
 5- Test connectivity example:
 ```bash
 sudo ip netns exec h1 ping 10.1.1.20 # connection to h2
-sudo ip netns exec h1 ping 10.1.1.50 # connection to h5
+sudo ip netns exec h4 ping 10.10.1.50 # connection to h5
 ```
 
 6- Clean the test environment:
