@@ -107,7 +107,7 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
 
 ## TODO:
-1- Fix Trunk Missing VLAN Tag upon Reveive
+1- Fix Trunk Missing VLAN Tag upon Reveive (maybe vlan interfaces with separate sockets bound instead of one)
 
 2- Add ARP Control Process
 
