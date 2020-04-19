@@ -76,6 +76,7 @@ func (mt *MACTable) Clear() {
 func (mt *MACTable) ClearExpired() {
 	for addr, ent := range mt.Table {
 		if ent.IsExpired() {
+			log.Printf("Clearing entry for address %s", addr)
 			mt.DelEntry(addr)
 		}
 	}
@@ -117,6 +118,7 @@ func getVlanPorts(vlan int, ports map[string]*dataplane.SwitchPort, inPort *data
 	res := []*dataplane.SwitchPort{}
 	for _, port := range ports {
 		if port == inPort {
+			log.Printf("L2 Switch excluded IN_Port %v", inPort)
 			continue
 		}
 		if port.Trunk {
@@ -141,7 +143,7 @@ func (st SwitchMACTable) SetInPort(frame *ethernet.Frame, inPort *dataplane.Swit
 		vlan = int(vlanObj.ID)
 	}
 	addr := frame.Source.String()
-	log.Println("Setting MAC Entry for in Frame port %s, addr %s, vlan %d", inPort.Name, addr, vlan)
+	log.Printf("Setting MAC Entry for in Frame port %s, addr %s, vlan %d", inPort.Name, addr, vlan)
 	vlanTable, ok := st[vlan]
 	if !ok {
 		vlanTable = &MACTable{}
@@ -152,6 +154,7 @@ func (st SwitchMACTable) SetInPort(frame *ethernet.Frame, inPort *dataplane.Swit
 }
 
 func (st SwitchMACTable) CheckAndClearLoop() {
+	log.Println("starting MACTable Check Routine")
 	for {
 		timer := time.NewTimer(MAC_EXPIRE_TIME)
 		<-timer.C

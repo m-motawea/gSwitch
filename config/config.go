@@ -21,8 +21,9 @@ type SwitchPortConfig struct {
 }
 
 type ControlProcessConfig struct {
-	Layer int
-	Name  string
+	Layer      int
+	Name       string
+	ConfigFile string
 }
 
 type Config struct {

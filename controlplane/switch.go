@@ -84,6 +84,8 @@ func (sw *Switch) initSwitch(name string, cfg config.Config, wg *sync.WaitGroup)
 		// add the process to the contolplane pipline
 		sw.controlPipe.AddProcess(&proc)
 		if pair.Init != nil {
+			stor := sw.Stor.GetStor(procConfig.Layer, procConfig.Name)
+			stor["ConfigFile"] = procConfig.ConfigFile
 			pair.Init(sw)
 		}
 	}

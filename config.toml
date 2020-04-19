@@ -40,3 +40,8 @@ Prefix = ""
 [[ControlProcess]]
 Layer = 2
 Name = "L2Switch"
+
+[[ControlProcess]]
+Layer = 2
+Name = "ARP"
+ConfigFile = "ARPConfig.toml"
