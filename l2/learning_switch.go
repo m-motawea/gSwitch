@@ -94,7 +94,6 @@ func (st SwitchMACTable) GetVlanEntry(vlan int, addr string) *MACEntry {
 }
 
 func (st SwitchMACTable) GetOutPort(frame *ethernet.Frame, sw *controlplane.Switch, inPort *dataplane.SwitchPort) []*dataplane.SwitchPort {
-	log.Println("=============================================================================================")
 	outPorts := []*dataplane.SwitchPort{}
 	vlanObj := frame.VLAN
 	vlan := 0
@@ -108,28 +107,41 @@ func (st SwitchMACTable) GetOutPort(frame *ethernet.Frame, sw *controlplane.Swit
 		outPorts = append(outPorts, entry.Port)
 	} else {
 		log.Println("Couldn't find Entry!")
-		for _, port := range sw.Ports {
-			if port == inPort {
-				continue
-			}
-			outPorts = append(outPorts, port)
-		}
+		outPorts = getVlanPorts(vlan, sw.Ports, inPort)
 	}
 	log.Printf("Out Ports: %v", outPorts)
-	log.Println("=============================================================================================")
 	return outPorts
 }
 
+func getVlanPorts(vlan int, ports map[string]*dataplane.SwitchPort, inPort *dataplane.SwitchPort) []*dataplane.SwitchPort {
+	res := []*dataplane.SwitchPort{}
+	for _, port := range ports {
+		if port == inPort {
+			continue
+		}
+		if port.Trunk {
+			for _, id := range port.AllowedVLANs {
+				if vlan == id {
+					res = append(res, port)
+				}
+			}
+		} else {
+			if port.VLAN == vlan {
+				res = append(res, port)
+			}
+		}
+	}
+	return res
+}
+
 func (st SwitchMACTable) SetInPort(frame *ethernet.Frame, inPort *dataplane.SwitchPort) *MACEntry {
-	log.Println("=============================================================================================")
-	log.Println("Setting MAC Entry for in Frame")
-	log.Println("=============================================================================================")
 	vlanObj := frame.VLAN
 	vlan := 0
 	if vlanObj != nil {
 		vlan = int(vlanObj.ID)
 	}
 	addr := frame.Source.String()
+	log.Println("Setting MAC Entry for in Frame port %s, addr %s, vlan %d", inPort.Name, addr, vlan)
 	vlanTable, ok := st[vlan]
 	if !ok {
 		vlanTable = &MACTable{}

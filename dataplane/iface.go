@@ -82,7 +82,7 @@ func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
 		if f.VLAN != nil {
 			if int(f.VLAN.ID) != s.VLAN {
 				// Discard
-				log.Printf("access port %s sending: vlan tag found. id: %d. Discarding", s.Name, f.VLAN.ID)
+				// log.Printf("access port %s sending: vlan tag found. id: %d. Discarding", s.Name, f.VLAN.ID)
 				return []byte{}
 			}
 			// Strip VLAN Tag

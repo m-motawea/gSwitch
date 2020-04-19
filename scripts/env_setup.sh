@@ -51,3 +51,6 @@ ip -n h4 addr add 10.10.1.40/24 dev h4
 ip -n h5 addr add 10.1.1.50/24 dev h5.1
 ip -n h5 addr add 10.10.1.50/24 dev h5.10
 
+ip -n h5 link set dev h5.1 up
+ip -n h5 link set dev h5.10 up
+
