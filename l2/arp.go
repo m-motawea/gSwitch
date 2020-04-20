@@ -138,7 +138,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 				msgContent.InFrame.FRAME = f
 				msgContent.InFrame.IN_PORT = &dataplane.SwitchPort{}
 				msg.Content = msgContent
-				// msg.Finished = true
+				msg.Finished = true
 				log.Printf("ARP Process sending result")
 				return msg
 			}
