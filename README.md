@@ -173,4 +173,4 @@ Up = true
 
 3- Add Static Routing Process
 
-4- Save and Load Config from Redis
+4- Read Config during Runtime form Redis and Presist it to File.
