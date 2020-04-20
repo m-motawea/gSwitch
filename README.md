@@ -62,6 +62,48 @@ Control processes are what defines how the traffic is handled by the switch. cur
 - `Name`: name of the process
 
 
+## Try It:
+1- Get the Package
+```bash
+go get github.com/m-motawea/gSwitch
+```
+
+2- Go the package dir and build it
+```bash
+cd ~/go/src/github.com/m-motawea/gSwitch # change the location if you installed go in a custom location
+go build
+```
+
+3- Initialize a test environment by network namespaces:
+```bash
+sudo ./scripts/env_setup.sh
+```
+* this will create 5 namespaces as hosts (`h1`,..`h5`) and a one as switch `sw`
+* `h1` & `h2` IP address are `10.1.1.10` and `10.1.1.20`
+* `h2` & `h3` IP address are `10.10.1.30` and `10.10.1.40`
+* `h5` IP addresses are `10.1.1.50` and `10.10.1.50` on vlans 1 and 10 respectively
+
+4- Start the switch in the `sw` namepace with the default config in the package:
+```bash
+sudo ip netns exec sw ./gSwitch
+```
+* `h1` and `h2` are connected to `sw` as access ports on vlan 1
+* `h3`and `h4`are connected to `sw` as access ports on vlan 10
+* `h5` connected to `sw` as trunk port with allowed vlans 1, 10
+* Control processes include the `L2Switch` only
+
+5- Test connectivity example:
+```bash
+sudo ip netns exec h1 ping 10.1.1.20 # connection to h2
+sudo ip netns exec h4 ping 10.10.1.50 # connection to h5
+```
+
+6- Clean the test environment:
+```bash
+sudo ./scripts/env_destroy.sh
+```
+
+
 ## Extending by Creating a Control Process:
 - The Control process is a pipeline process as described here (https://github.com/m-motawea/pipeline)
 - Control processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
@@ -132,45 +174,3 @@ Up = true
 3- Add Static Routing Process
 
 4- Save and Load Config from Redis
-
-
-## Try It:
-1- Get the Package
-```bash
-go get github.com/m-motawea/gSwitch
-```
-
-2- Go the package dir and build it
-```bash
-cd ~/go/src/github.com/m-motawea/gSwitch # change the location if you installed go in a custom location
-go build
-```
-
-3- Initialize a test environment by network namespaces:
-```bash
-sudo ./scripts/env_setup.sh
-```
-* this will create 5 namespaces as hosts (`h1`,..`h5`) and a one as switch `sw`
-* `h1` & `h2` IP address are `10.1.1.10` and `10.1.1.20`
-* `h2` & `h3` IP address are `10.10.1.30` and `10.10.1.40`
-* `h5` IP addresses are `10.1.1.50` and `10.10.1.50` on vlans 1 and 10 respectively
-
-4- Start the switch in the `sw` namepace with the default config in the package:
-```bash
-sudo ip netns exec sw ./gSwitch
-```
-* `h1` and `h2` are connected to `sw` as access ports on vlan 1
-* `h3`and `h4`are connected to `sw` as access ports on vlan 10
-* `h5` connected to `sw` as trunk port with allowed vlans 1, 10
-* Control processes include the `L2Switch` only
-
-5- Test connectivity example:
-```bash
-sudo ip netns exec h1 ping 10.1.1.20 # connection to h2
-sudo ip netns exec h4 ping 10.10.1.50 # connection to h5
-```
-
-6- Clean the test environment:
-```bash
-sudo ./scripts/env_destroy.sh
-```
