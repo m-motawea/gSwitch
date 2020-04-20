@@ -20,18 +20,8 @@ Prefix = ""
 
     [SwitchPorts.sw2]
     Trunk = true
-    AllowedVLANs = [1]
+    AllowedVLANs = [1, 10]
     Up = true
-
-    [SwitchPorts.sw3]
-    Trunk = true
-    AllowedVLANs = [1]
-    Up = true
-
-    [SwitchPorts.sw4]
-    Trunk = true
-    AllowedVLANs = [1]
-    Up = false
 
 
 [[ControlProcess]]
