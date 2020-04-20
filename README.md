@@ -62,8 +62,9 @@ Control processes are what defines how the traffic is handled by the switch. cur
 - `Name`: name of the process
 
 
-- Control processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
+## Extending by Creating a Control Process:
 - The Control process is a pipeline process as described here (https://github.com/m-motawea/pipeline)
+- Control processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
 - The content strucure of the PipelineMessage in the switch pipeline is defined in `github.com/m-motawea/l2_switch/controlplane`
 
 ```go
