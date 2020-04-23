@@ -36,6 +36,11 @@ Prefix = ""
     AllowedVLANs = [1]
     Up = true
 
+    [SwitchPorts.sw-mgmt]
+    Trunk = false
+    AllowedVLANs = [1]
+    Up = true
+
 
 [[ControlProcess]]
 Layer = 2
