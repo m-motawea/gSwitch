@@ -9,6 +9,7 @@ import (
 	"github.com/m-motawea/gSwitch/config"
 	"github.com/m-motawea/gSwitch/dataplane"
 	"github.com/m-motawea/pipeline"
+	"github.com/mdlayher/ethernet"
 )
 
 type ProcStor map[string]interface{} // Key to Val
@@ -201,5 +202,16 @@ func (sw *Switch) DownPort(name string) {
 	}
 	if port.Status {
 		port.Down()
+	}
+}
+
+func (sw *Switch) SendFrame(frame *ethernet.Frame, OutPorts ...*dataplane.SwitchPort) {
+	if len(OutPorts) == 0 {
+		return
+	}
+	for _, port := range OutPorts {
+		log.Printf("Switch: Async Frame output to port %s...", port.Name)
+		port.Out(frame)
+		log.Printf("Switch: Async Frame output to port %s.", port.Name)
 	}
 }

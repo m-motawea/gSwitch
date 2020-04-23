@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -15,6 +16,7 @@ import (
 )
 
 const ARP_EXPIRE_TIME = 60 * time.Second
+const ARP_REQUEST_WAIT_TIME = 15 * time.Second
 
 type LocalAddress struct {
 	IP  string
@@ -44,6 +46,7 @@ func (ae *ARPEntry) IsExpired() bool {
 type SwitchARPTable struct {
 	ARPTable        map[string]*ARPEntry   // IP to one ARP Entry
 	InverseARPTable map[string][]*ARPEntry // MAC to multiple ARP Entries
+	rwMutex         *sync.RWMutex
 }
 
 func (at *SwitchARPTable) SetEntry(ip net.IP, mac net.HardwareAddr, port *dataplane.SwitchPort) *ARPEntry {
@@ -57,6 +60,10 @@ func (at *SwitchARPTable) SetEntry(ip net.IP, mac net.HardwareAddr, port *datapl
 		LastRefreshed: t,
 	}
 	strMAc := mac.String()
+
+	defer at.rwMutex.Unlock()
+	at.rwMutex.Lock()
+
 	at.ARPTable[ip.String()] = &ent
 	val, ok := at.InverseARPTable[strMAc]
 	if !ok {
@@ -69,6 +76,8 @@ func (at *SwitchARPTable) SetEntry(ip net.IP, mac net.HardwareAddr, port *datapl
 
 func (at *SwitchARPTable) GetEntry(ip net.IP) *ARPEntry {
 	ipStr := ip.String()
+	defer at.rwMutex.Unlock()
+	at.rwMutex.Lock()
 	ent, ok := at.ARPTable[ipStr]
 	if !ok {
 		return nil
@@ -78,6 +87,8 @@ func (at *SwitchARPTable) GetEntry(ip net.IP) *ARPEntry {
 
 func (at *SwitchARPTable) DelEntry(ip net.IP) {
 	ipStr := ip.String()
+	defer at.rwMutex.Unlock()
+	at.rwMutex.Lock()
 	ent, ok := at.ARPTable[ipStr]
 	if !ok {
 		return
@@ -117,8 +128,8 @@ func (at *SwitchARPTable) CheckAndClear() {
 }
 
 func (at *SwitchARPTable) Init() {
-	at.ARPTable = map[string]*ARPEntry{}
-	at.InverseARPTable = map[string][]*ARPEntry{}
+	at.ARPTable = make(map[string]*ARPEntry)
+	at.InverseARPTable = make(map[string][]*ARPEntry)
 }
 
 func readConfig(path string) (ARPConfig, error) {
@@ -172,7 +183,7 @@ func InitARP(sw *controlplane.Switch) {
 			}
 		}
 	}
-	arpTable := SwitchARPTable{}
+	arpTable := SwitchARPTable{rwMutex: &sync.RWMutex{}}
 	arpTable.Init()
 	stor["Table"] = arpTable
 	go arpTable.CheckAndClear()
@@ -180,6 +191,18 @@ func InitARP(sw *controlplane.Switch) {
 
 func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	// This Process handles ARP requests destined to the switch and populate the ARP Table
+	/*
+		IF ARP:
+			IF ARP Reply:
+				- Add Target IP, MAC & Port to ARP Table
+				IF Sender IP is a Local IP (defined in config file):
+					- Drop Message
+			Else IF ARP Request:
+				- Add Source IP, MAC & PORT to ARP Table
+				IF Target IP is a Local IP (defined in config file):
+					- Reply
+	*/
+
 	msgContent, _ := msg.Content.(controlplane.ControlMessage)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "ARP")
 	config, ok := stor["CONFIG"].(ARPConfig)
@@ -187,7 +210,6 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 		log.Println("ARP Config is not correct")
 		return msg
 	}
-	log.Printf("ARPConfig: %v", config)
 
 	frame := msgContent.InFrame.FRAME
 	log.Printf("ARP Reply proc Frame of Type %v", frame.EtherType.String())
@@ -199,9 +221,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 			return msg
 		}
 
-		stor := msgContent.ParentSwitch.Stor.GetStor(2, "ARP")
 		table := stor["Table"].(SwitchARPTable)
-
 		targetIP := p.TargetIP.String()
 
 		if p.Operation == arp.OperationReply {
@@ -277,6 +297,108 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 }
 
 func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
+	// This Processes sets the appropriate SRC and DST MAC Address for all IPv4 internal frames
 	log.Println("ARP Resolve proc...")
+	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	if msgContent.InFrame.FRAME.EtherType != ethernet.EtherTypeIPv4 {
+		return msg
+	}
+	log.Println("ARP Process: Received IPv4 Frame")
+
+	ipPayload := msgContent.InFrame.FRAME.Payload
+	if len(ipPayload) < 20 {
+		// invalid IPv4 payload
+		log.Printf("ARP Process got invalid IPv4 payload")
+		msg.Drop = true
+		return msg
+	}
+	dstIP := net.IP(ipPayload[12:16])
+	srcIP := net.IP(ipPayload[16:20])
+	log.Printf("ARP Process: SRC IP: %v, DST IP: %v", srcIP, dstIP)
+	// if srcIP is mine set src mac and send ARP Request to get destination mac
+	stor := msgContent.ParentSwitch.Stor.GetStor(2, "ARP")
+	config, ok := stor["CONFIG"].(ARPConfig)
+	if !ok {
+		log.Println("ARP Config is not correct")
+		return msg
+	}
+
+	srcIPStr := srcIP.String()
+	table := stor["Table"].(SwitchARPTable)
+	for iface, addr := range config.LocalAddresses {
+		if addr.IP == srcIPStr {
+			// Send ARP and wait for result before setting the destination mac
+			log.Printf("ARP Process: Setting Proper Source & Destination MAC for interface %v", iface)
+			byteMAC, err := net.ParseMAC(addr.MAC)
+			if err != nil {
+				log.Printf("ARP Process: Failed to parse mac addr of local address %v", addr)
+				msg.Drop = true
+				return msg
+			}
+			msgContent.InFrame.FRAME.Source = net.HardwareAddr(byteMAC)
+			// Search for ARP Entry for the destination IP
+			ent := table.GetEntry(dstIP)
+			if ent != nil {
+				log.Printf("ARP Process: Found ARP Entry for IP: %v, MAC: %v", dstIP, ent.MAC)
+				msgContent.InFrame.FRAME.Destination = ent.MAC
+				msg.Content = msgContent
+				return msg
+			}
+			log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
+			dstMac := ResolveIP(srcIP, dstIP, byteMAC, msgContent.ParentSwitch, table)
+			if dstMac == nil {
+				log.Printf("ARP Process: Unable to resolve IP: %v", dstIP)
+				msg.Drop = true
+				return msg
+			}
+			msgContent.InFrame.FRAME.Destination = *dstMac
+			msg.Content = msgContent
+			return msg
+		}
+	}
 	return msg
+}
+
+func ResolveIP(srcIP net.IP, dstIP net.IP, srcMAC net.HardwareAddr, sw *controlplane.Switch, table SwitchARPTable) *net.HardwareAddr {
+	// build arp frame
+	p, err := arp.NewPacket(
+		arp.OperationRequest,
+		srcMAC,
+		srcIP,
+		ethernet.Broadcast,
+		dstIP,
+	)
+	if err != nil {
+		log.Printf("ARP Process: Failed to build ARP Request due to error %v", err)
+		return nil
+	}
+	pb, err := p.MarshalBinary()
+	if err != nil {
+		log.Printf("ARP Process: Failed to Marshal ARP Request due to error %v", err)
+		return nil
+	}
+	f := &ethernet.Frame{
+		Destination: ethernet.Broadcast,
+		Source:      srcMAC,
+		EtherType:   ethernet.EtherTypeARP,
+		Payload:     pb,
+	}
+	// send it out of all switch ports
+	ports := []*dataplane.SwitchPort{}
+	for _, p := range sw.Ports {
+		ports = append(ports, p)
+	}
+	go sw.SendFrame(f, ports...)
+	// check switch ARP table until timeout
+	timeout := time.Now().Add(ARP_REQUEST_WAIT_TIME)
+	for {
+		if time.Now().Sub(timeout) > time.Second {
+			log.Printf("ARP Process: ARP Request for IP: %v Timedout.", dstIP)
+			return nil
+		}
+		ent := table.GetEntry(dstIP)
+		if ent != nil {
+			return &ent.MAC
+		}
+	}
 }
