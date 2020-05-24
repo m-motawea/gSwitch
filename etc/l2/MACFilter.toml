@@ -1,0 +1,37 @@
+[IngressFilter]
+Mode = 1  # modes 0 > allow all, 1 > deny all
+
+[EgressFilter]
+Mode = 1  # modes 0 > allow all, 1 > deny all
+
+
+[[IngressRule]]
+SrcAddress = "66:ae:a3:dd:bd:00"
+DstAddress = ""
+Port = "" # bind the rule to a spcefic port. Optional
+Action = 0 # actions 0 > allow, 1 > deny
+
+[[IngressRule]]
+SrcAddress = "1e:cc:ff:e1:3e:98"
+DstAddress = ""
+Port = "" # bind the rule to a spcefic port. Optional
+Action = 0 # actions 0 > allow, 1 > deny
+
+[[EgressRule]]
+SrcAddress = "1e:cc:ff:e1:3e:98"
+DstAddress = ""
+Port = ""  # bind the rule to a spcefic port
+Action = 0 # actions 0 > allow, 1 > deny
+
+[[EgressRule]]
+SrcAddress = "66:ae:a3:dd:bd:00"
+DstAddress = ""
+Port = ""  # bind the rule to a spcefic port
+Action = 0 # actions 0 > allow, 1 > deny
+
+[LocalAddresses]
+    [LocalAddresses.VLAN1]
+    Address = "52:9c:57:5e:40:aa"
+
+    [LocalAddresses.VLAN10]
+    Address = "52:e1:47:de:21:2a"
