@@ -41,6 +41,14 @@ Prefix = ""
     AllowedVLANs = [1]
     Up = true
 
+# [[ControlProcess]]
+# Layer = 2
+# Name = "MACFilter"
+# ConfigFile = "etc/l2/MACFilter.toml"
+
+# [[ControlProcess]]
+# Layer = 2
+# Name = "Hub"
 
 [[ControlProcess]]
 Layer = 2
@@ -49,4 +57,4 @@ Name = "L2Switch"
 [[ControlProcess]]
 Layer = 2
 Name = "ARP"
-ConfigFile = "ARPConfig.toml"
+ConfigFile = "etc/l2/ARPConfig.toml"

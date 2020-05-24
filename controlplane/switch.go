@@ -127,6 +127,7 @@ func (sw *Switch) SwitchLoop() {
 	for {
 		select {
 		case <-sw.closeChan:
+			log.Println("Control Plane: stopping SwitchLoop..")
 			return
 		case inFrame := <-sw.dataPlaneChan:
 			// incoming frames from ports
@@ -151,6 +152,7 @@ func (sw *Switch) ConsumerLoop() {
 	for {
 		select {
 		case <-sw.closeChan:
+			log.Println("Control Plane: stopping ConsumerLoop..")
 			return
 		case pipeMsg := <-sw.consumeChannel:
 			// processed msg from pipeline
@@ -180,6 +182,7 @@ func (sw *Switch) Stop() {
 		port.Down()
 	}
 	sw.closeChan <- 1
+	sw.controlPipe.Stop()
 }
 
 func (sw *Switch) UpPort(name string) {

@@ -1,8 +1,0 @@
-[LocalAddresses]
-    [LocalAddresses.VLAN1]
-    IP = "10.1.1.1"
-    MAC = "52:9c:57:5e:40:aa"
-
-    [LocalAddresses.VLAN10]
-    IP = "10.10.1.1"
-    MAC = "52:e1:47:de:21:2a"

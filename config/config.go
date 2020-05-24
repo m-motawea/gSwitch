@@ -45,3 +45,16 @@ func ReadConfig(path string) (Config, error) {
 	}
 	return config, nil
 }
+
+func ReadConfigFile(path string, config interface{}) error {
+	confBin, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	confStr := string(confBin)
+	_, err = toml.Decode(confStr, config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
