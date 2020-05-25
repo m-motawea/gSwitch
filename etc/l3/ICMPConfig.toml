@@ -1,0 +1,6 @@
+[LocalAddresses]
+    [LocalAddresses.VLAN1]
+    Address = "10.1.1.1"
+
+    [LocalAddresses.VLAN10]
+    Address = "10.10.1.1"

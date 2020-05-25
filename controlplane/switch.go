@@ -136,6 +136,7 @@ func (sw *Switch) SwitchLoop() {
 				InFrame:      &inFrame,
 				OutPorts:     []*dataplane.SwitchPort{},
 				ParentSwitch: sw,
+				LayerPayload: []byte{},
 			}
 			pipeMsg := pipeline.PipelineMessage{
 				Direction: pipeline.PipelineInDirection{},

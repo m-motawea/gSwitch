@@ -6,7 +6,9 @@ import (
 )
 
 type ControlMessage struct {
-	InFrame      *dataplane.IncomingFrame
+	InFrame *dataplane.IncomingFrame
+	// PreMessage   *ControlMessage // To be able to reconstruct the packet again
+	LayerPayload []byte // To separate each leayer payload
 	OutPorts     []*dataplane.SwitchPort
 	ParentSwitch *Switch
 }
@@ -29,4 +31,8 @@ func RegisterLayerProc(layer int, name string, pair ControlProcessFuncPair) {
 		ControlProcs[layer] = map[string]ControlProcessFuncPair{}
 	}
 	ControlProcs[layer][name] = pair
+}
+
+func DummyProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
+	return msg
 }

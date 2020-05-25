@@ -58,3 +58,11 @@ Name = "L2Switch"
 Layer = 2
 Name = "ARP"
 ConfigFile = "etc/l2/ARPConfig.toml"
+
+[[ControlProcess]]
+Layer = 2
+Name = "L2Adapter"
+
+[[ControlProcess]]
+Layer = 3
+Name = "IPv4"
