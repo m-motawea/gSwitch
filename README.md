@@ -140,7 +140,7 @@ log.Printf("\n\nHub Stor: %v \n\n", stor)
 ```
 
 ## TODO:
-1- Fix Trunk Ports (due to stripped vlan tags)
+1- Try to Fix Trunk Ports (due to stripped vlan tags)
 * currently trunk link is not working but to get around this you can use subinterfaces.
 * create a sub interface for each vlan and use the sub interface in configuration instaed of the Master.
 ```bash
@@ -160,7 +160,9 @@ Up = true
 ```
 
 2- Add ARP Control Process
+* ARP Responder Added.
+* ARP Resolver not used or tested yet
 
-3- Add Static Routing Process
+3- Add ICMP Responder Process
 
-4- Read Config during Runtime form Redis and Presist it to File.
+4- Add Static Routing Process
