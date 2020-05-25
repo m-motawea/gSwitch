@@ -26,11 +26,16 @@ func IngressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 
 func EgressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	msgContent, _ := msg.Content.(controlplane.ControlMessage)
-	if len(msgContent.LayerPayload) > 0 {
-		msgContent.InFrame.FRAME.Payload = msgContent.LayerPayload
+	lp, ok := msgContent.LayerPayload.([]byte)
+	if !ok {
+		log.Println("L2 Adapter Egress recieved invalid payload from previous process")
+		msg.Drop = true
+		return msg
+	}
+	if len(lp) > 0 {
+		msgContent.InFrame.FRAME.Payload = lp
 	}
 	// msg.Content = *msgContent.PreMessage
-	log.Printf("L2 Adapter Egress Previous Layer Payload: %v", msgContent.LayerPayload)
 	msg.Content = msgContent
 	return msg
 }

@@ -8,7 +8,7 @@ import (
 type ControlMessage struct {
 	InFrame *dataplane.IncomingFrame
 	// PreMessage   *ControlMessage // To be able to reconstruct the packet again
-	LayerPayload []byte // To separate each leayer payload
+	LayerPayload interface{} // To separate each leayer payload
 	OutPorts     []*dataplane.SwitchPort
 	ParentSwitch *Switch
 }

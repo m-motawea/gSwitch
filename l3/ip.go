@@ -11,19 +11,24 @@ import (
 
 func init() {
 	FuncPair := controlplane.ControlProcessFuncPair{
-		InFunc:  IngressIpEncoder,
-		OutFunc: controlplane.DummyProc,
+		InFunc:  IngressIpDecoder,
+		OutFunc: EgressIpEncoder,
 	}
 
 	controlplane.RegisterLayerProc(3, "IPv4", FuncPair)
 }
 
-func IngressIpEncoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
+func IngressIpDecoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	msgContent, _ := msg.Content.(controlplane.ControlMessage)
-	payload := msgContent.LayerPayload
 	if msgContent.InFrame.FRAME.EtherType != ethernet.EtherTypeIPv4 {
 		// Accept only IPv4 for now
 		msg.Finished = true
+		return msg
+	}
+	payload, ok := msgContent.LayerPayload.([]byte)
+	if !ok {
+		log.Println("IP Process recieved invalid payload")
+		msg.Drop = true
 		return msg
 	}
 	ip4 := ip.IPv4{}
@@ -33,6 +38,32 @@ func IngressIpEncoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessag
 		msg.Finished = true
 		return msg
 	}
+
 	log.Printf("IP Process: decoded IPv4: %+v", ip4)
+	msgContent.LayerPayload = ip4
+	msg.Content = msgContent
+	return msg
+}
+
+func EgressIpEncoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
+	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	if msgContent.InFrame.FRAME.EtherType != ethernet.EtherTypeIPv4 {
+		// skip non IPv4 packets for now
+		return msg
+	}
+	ip, ok := msgContent.LayerPayload.(ip.IPv4)
+	if !ok {
+		log.Println("IP Process Egress recieved invalid payload")
+		msg.Drop = true
+		return msg
+	}
+	payload, err := ip.MarshalBinary()
+	if err != nil {
+		log.Printf("IP Process egress failed to encode IP packet due to error %v", err)
+		msg.Drop = true
+		return msg
+	}
+	msgContent.LayerPayload = payload
+	msg.Content = msgContent
 	return msg
 }
