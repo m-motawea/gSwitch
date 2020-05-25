@@ -18,6 +18,7 @@ func init() {
 
 func IngressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent.PreMessage = msg
 	msgContent.LayerPayload = msgContent.InFrame.FRAME.Payload
 	log.Printf("L2 Adapter Ingress Next Layer Payload: %v", msgContent.LayerPayload)
 	msg.Content = msgContent
