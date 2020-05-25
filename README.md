@@ -101,8 +101,10 @@ sudo ./scripts/env_destroy.sh
 
 ```go
 type ControlMessage struct {
-	InFrame *dataplane.IncomingFrame
-	OutPorts []*dataplane.SwitchPort
+	InFrame      *dataplane.IncomingFrame
+	PreMessage   interface{} // To be able to reconstruct the packet again
+	LayerPayload interface{} // To separate each leayer payload
+	OutPorts     []*dataplane.SwitchPort
 	ParentSwitch *Switch
 }
 ```
@@ -166,3 +168,5 @@ Up = true
 3- Add ICMP Responder Process
 
 4- Add Static Routing Process
+
+5- Document Inter-Layer Communication (Adapters)
