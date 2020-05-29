@@ -161,12 +161,6 @@ AllowedVLANs = [1]
 Up = true
 ```
 
-2- Add ARP Control Process
-* ARP Responder Added.
-* ARP Resolver not used or tested yet
+2- Add Static Routing Process
 
-3- Add ICMP Responder Process
-
-4- Add Static Routing Process
-
-5- Document Inter-Layer Communication (Adapters)
+3- Document Inter-Layer Communication (Adapters)
