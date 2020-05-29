@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/m-motawea/gSwitch/controlplane"
+	"github.com/m-motawea/ip"
 	"github.com/m-motawea/pipeline"
 )
 
@@ -38,5 +39,8 @@ func EgressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 	}
 	// msg.Content = *msgContent.PreMessage
 	msg.Content = msgContent
+	i := ip.IPv4{}
+	_ = i.UnmarshalBinary(lp)
+	log.Printf("L@ Adapter IPv4 %+v", i)
 	return msg
 }

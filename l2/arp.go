@@ -312,8 +312,8 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 		msg.Drop = true
 		return msg
 	}
-	dstIP := net.IP(ipPayload[12:16])
-	srcIP := net.IP(ipPayload[16:20])
+	srcIP := net.IP(ipPayload[12:16])
+	dstIP := net.IP(ipPayload[16:20])
 	log.Printf("ARP Process: SRC IP: %v, DST IP: %v", srcIP, dstIP)
 	// if srcIP is mine set src mac and send ARP Request to get destination mac
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "ARP")
@@ -326,6 +326,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 	srcIPStr := srcIP.String()
 	table := stor["Table"].(SwitchARPTable)
 	for iface, addr := range config.LocalAddresses {
+		log.Printf("ARP Resolve Out: Comparing %s with %s", addr.IP, srcIPStr)
 		if addr.IP == srcIPStr {
 			// Send ARP and wait for result before setting the destination mac
 			log.Printf("ARP Process: Setting Proper Source & Destination MAC for interface %v", iface)
