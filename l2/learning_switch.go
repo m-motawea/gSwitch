@@ -11,7 +11,7 @@ import (
 	"github.com/mdlayher/ethernet"
 )
 
-const MAC_EXPIRE_TIME = 30 * time.Second
+const MAC_EXPIRE_TIME = 300 * time.Second
 
 type MACEntry struct {
 	Addr          net.HardwareAddr
