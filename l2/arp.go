@@ -16,7 +16,7 @@ import (
 )
 
 const ARP_EXPIRE_TIME = 60 * time.Second
-const ARP_REQUEST_WAIT_TIME = 15 * time.Second
+const ARP_REQUEST_WAIT_TIME = 3 * time.Second
 
 type LocalAddress struct {
 	IP  string
@@ -192,17 +192,10 @@ func InitARP(sw *controlplane.Switch) {
 func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	// This Process handles ARP requests destined to the switch and populate the ARP Table
 	/*
-		IF ARP:
-			IF ARP Reply:
-				IF Target IP is a Local IP (defined in config file):
-					- Drop Message
-				Else Add Target IP, MAC & Port to ARP Table
-			Else IF ARP Request:
-				IF SenderIP is a Local IP:
-					- Drop message
-				Else Add Source IP, MAC & PORT to ARP Table
-					IF Target IP is a Local IP (defined in config file):
-						- Reply
+		In ARP Request: Validate and store (sender IP)
+		In ARP Reply: Validate and store (sender IP & MAC)
+		Always use Sender Inormation
+
 	*/
 
 	msgContent, _ := msg.Content.(controlplane.ControlMessage)
@@ -225,31 +218,31 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 
 		table := stor["Table"].(SwitchARPTable)
 		targetIP := p.TargetIP.String()
+		sender := p.SenderIP.String()
 
 		if p.Operation == arp.OperationReply {
-			log.Println("ARP Process: This is ARP Reply")
+			log.Println("ARP Process: This is ARP Request")
 			// ARP Reply
 			// if it is from a local address drop
 			Valid := true
 			for _, addr := range config.LocalAddresses {
-				if addr.IP == targetIP {
-					log.Printf("ARP Process: This is ARP Reply from My IP: %v", addr.IP)
+				if addr.IP == sender {
+					log.Printf("ARP Process: This is ARP Request from My IP: %v", addr.IP)
 					Valid = false
 					msg.Drop = true
 				}
 			}
 			if Valid {
 				// Add target ip and mac to ARP Table if not in my addresses
-				table.SetEntry(p.TargetIP, p.TargetHardwareAddr, msgContent.InFrame.IN_PORT)
+				table.SetEntry(p.SenderIP, p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
 			}
 			return msg
-		} else {
+		} else if p.Operation == arp.OperationRequest {
 			// ARP Request
 			// Add Sender MAC and IP to ARP table
 			// if arp request from me drop it
 			log.Println("ARP Process: This is ARP Request")
 			Valid := true
-			sender := p.SenderIP.String()
 			for _, addr := range config.LocalAddresses {
 				if addr.IP == sender {
 					log.Printf("ARP Process: This is ARP Request from My IP: %v", addr.IP)
@@ -311,10 +304,8 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 			}
 		}
 		log.Printf("ARP Process: IP %s not a local address", targetIP)
-	} else {
-		return msg
+		msg.Finished = true
 	}
-	msg.Finished = true
 	return msg
 }
 
@@ -397,7 +388,8 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 				return msg
 			}
 			log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
-			dstMac := ResolveIP(srcIP, dstIP, byteMAC, msgContent.ParentSwitch, table)
+			mySrcIP := net.ParseIP(addr.IP)
+			dstMac := ResolveIP(mySrcIP, dstIP, byteMAC, msgContent.ParentSwitch, table)
 			if dstMac == nil {
 				log.Printf("ARP Process: Unable to resolve IP: %v", dstIP)
 				msg.Drop = true
