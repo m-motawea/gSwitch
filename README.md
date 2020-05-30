@@ -161,6 +161,6 @@ AllowedVLANs = [1]
 Up = true
 ```
 
-2- Add Static Routing Process
+2- Document Current Processes
 
 3- Document Inter-Layer Communication (Adapters)
