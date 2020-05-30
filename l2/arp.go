@@ -194,13 +194,15 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 	/*
 		IF ARP:
 			IF ARP Reply:
-				- Add Target IP, MAC & Port to ARP Table
-				IF Sender IP is a Local IP (defined in config file):
-					- Drop Message
-			Else IF ARP Request:
-				- Add Source IP, MAC & PORT to ARP Table
 				IF Target IP is a Local IP (defined in config file):
-					- Reply
+					- Drop Message
+				Else Add Target IP, MAC & Port to ARP Table
+			Else IF ARP Request:
+				IF SenderIP is a Local IP:
+					- Drop message
+				Else Add Source IP, MAC & PORT to ARP Table
+					IF Target IP is a Local IP (defined in config file):
+						- Reply
 	*/
 
 	msgContent, _ := msg.Content.(controlplane.ControlMessage)
@@ -227,11 +229,11 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 		if p.Operation == arp.OperationReply {
 			log.Println("ARP Process: This is ARP Reply")
 			// ARP Reply
-			// if it is for a local address drop
+			// if it is from a local address drop
 			Valid := true
 			for _, addr := range config.LocalAddresses {
 				if addr.IP == targetIP {
-					log.Printf("ARP Process: This is ARP Reply to My IP: %v", addr.IP)
+					log.Printf("ARP Process: This is ARP Reply from My IP: %v", addr.IP)
 					Valid = false
 					msg.Drop = true
 				}
@@ -244,8 +246,21 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 		} else {
 			// ARP Request
 			// Add Sender MAC and IP to ARP table
+			// if arp request from me drop it
 			log.Println("ARP Process: This is ARP Request")
-			table.SetEntry(p.SenderIP, p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
+			Valid := true
+			sender := p.SenderIP.String()
+			for _, addr := range config.LocalAddresses {
+				if addr.IP == sender {
+					log.Printf("ARP Process: This is ARP Request from My IP: %v", addr.IP)
+					Valid = false
+					msg.Drop = true
+				}
+			}
+			if Valid {
+				// Add target ip and mac to ARP Table if not in my addresses
+				table.SetEntry(p.SenderIP, p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
+			}
 		}
 
 		log.Printf("ARP Process: Target IP: %s", targetIP)
@@ -255,7 +270,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 			mac, err := net.ParseMAC(addr.MAC)
 			if err != nil {
 				log.Printf("ARP Process: invalid local mac %s", addr.MAC)
-				msg.Drop = true
+				// msg.Drop = true
 				return msg
 			}
 			if addr.IP == targetIP {
@@ -296,7 +311,10 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 			}
 		}
 		log.Printf("ARP Process: IP %s not a local address", targetIP)
+	} else {
+		return msg
 	}
+	msg.Finished = true
 	return msg
 }
 
@@ -333,6 +351,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 	table := stor["Table"].(SwitchARPTable)
 	for iface, addr := range config.LocalAddresses {
 		log.Printf("ARP Resolve Out: Comparing %s with %s", addr.IP, srcIPStr)
+		log.Printf("ARP Resolve Out: Comparing %s with %s", addr.MAC, srcMACStr)
 		if addr.IP == srcIPStr {
 			// Send ARP and wait for result before setting the destination mac
 			log.Printf("ARP Process: Setting Proper Source & Destination MAC for interface %v", iface)
@@ -361,38 +380,35 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 			msgContent.InFrame.FRAME.Destination = *dstMac
 			msg.Content = msgContent
 			return msg
-		} else {
-			// if src mac is my mac
-			log.Printf("ARP Resolve Out: Comparing %s with %s", addr.MAC, srcMACStr)
-			if addr.MAC == srcMACStr {
-				log.Printf("ARP Process: (Rotuing) Setting Proper Destination MAC and VLAN for interface %v", iface)
-				// Search for ARP Entry for the destination IP
-				byteMAC, err := net.ParseMAC(addr.MAC)
-				if err != nil {
-					log.Printf("ARP Process: Failed to parse mac addr of local address %v", addr)
-					msg.Drop = true
-					return msg
-				}
-				ent := table.GetEntry(dstIP)
-				if ent != nil {
-					log.Printf("ARP Process: Found ARP Entry for IP: %v, MAC: %v", dstIP, ent.MAC)
-					msgContent.InFrame.FRAME.Destination = ent.MAC
-					msg.Content = msgContent
-					return msg
-				}
-				log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
-				dstMac := ResolveIP(srcIP, dstIP, byteMAC, msgContent.ParentSwitch, table)
-				if dstMac == nil {
-					log.Printf("ARP Process: Unable to resolve IP: %v", dstIP)
-					msg.Drop = true
-					return msg
-				}
-				msgContent.InFrame.FRAME.Destination = *dstMac
-				msg.Content = msgContent
-
+		} else if addr.MAC == srcMACStr {
+			log.Printf("ARP Process: (Rotuing) Setting Proper Destination MAC and VLAN for interface %v", iface)
+			// Search for ARP Entry for the destination IP
+			byteMAC, err := net.ParseMAC(addr.MAC)
+			if err != nil {
+				log.Printf("ARP Process: Failed to parse mac addr of local address %v", addr)
+				msg.Drop = true
+				return msg
 			}
+			ent := table.GetEntry(dstIP)
+			if ent != nil {
+				log.Printf("ARP Process: Found ARP Entry for IP: %v, MAC: %v", dstIP, ent.MAC)
+				msgContent.InFrame.FRAME.Destination = ent.MAC
+				msg.Content = msgContent
+				return msg
+			}
+			log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
+			dstMac := ResolveIP(srcIP, dstIP, byteMAC, msgContent.ParentSwitch, table)
+			if dstMac == nil {
+				log.Printf("ARP Process: Unable to resolve IP: %v", dstIP)
+				msg.Drop = true
+				return msg
+			}
+			msgContent.InFrame.FRAME.Destination = *dstMac
+			msg.Content = msgContent
+			return msg
 		}
 	}
+	log.Println("ARP Resolv out: frame is not originated by me. returning msg")
 	return msg
 }
 

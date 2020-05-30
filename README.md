@@ -114,4 +114,6 @@ AllowedVLANs = [1]
 Up = true
 ```
 
-2- Document Current Processes
+2- `_gateway` causing ARP conflict when running L3 `Routing`
+
+3- Document Current Processes
