@@ -1,0 +1,8 @@
+[AllowedAddresses]
+    [AllowedAddresses."52:9c:57:5e:40:aa"]
+	MAC = "52:9c:57:5e:40:aa"
+	Name = "VLAN10"
+
+    [AllowedAddresses."52:e1:47:de:21:2a"]
+	MAC = "52:e1:47:de:21:2a"
+	Name = "VLAN10"

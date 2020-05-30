@@ -29,9 +29,9 @@ func init() {
 }
 
 func InitICMP(sw *controlplane.Switch) {
-	log.Println("Starting MAC Filter Process")
+	log.Println("Starting ICMP Process")
 	stor := sw.Stor.GetStor(3, "ICMP")
-	log.Printf("ICMP Filter Process Config file path: %v", stor["ConfigFile"])
+	log.Printf("ICMP Process Config file path: %v", stor["ConfigFile"])
 	configObj := ICMPConfig{}
 	if stor["ConfigFile"] != nil {
 		path, ok := stor["ConfigFile"].(string)
@@ -92,6 +92,8 @@ func ICMPProcessIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 				i.Data = data
 				msgContent.LayerPayload = i
 				msg.Content = msgContent
+				msg.Finished = true
+				msgContent.InFrame.FRAME.Destination = nil
 				log.Printf("ICMP Proc result ICMP: %+v", ic)
 				log.Printf("ICMP Proc result IP: %+v", i)
 				return msg

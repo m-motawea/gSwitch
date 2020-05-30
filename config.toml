@@ -26,20 +26,20 @@ Prefix = ""
     AllowedVLANs = [10]
     Up = true
 
-    [SwitchPorts."sw5.10"]
-    Trunk = false
-    AllowedVLANs = [10]
-    Up = true
-
-    [SwitchPorts."sw5.1"]
-    Trunk = false
-    AllowedVLANs = [1]
-    Up = true
-
-    [SwitchPorts.sw-mgmt]
-    Trunk = false
-    AllowedVLANs = [1]
-    Up = true
+    # [SwitchPorts."sw5.10"]
+    # Trunk = false
+    # AllowedVLANs = [10]
+    # Up = true
+    # 
+    # [SwitchPorts."sw5.1"]
+    # Trunk = false
+    # AllowedVLANs = [1]
+    # Up = true
+    # 
+    # [SwitchPorts.sw-mgmt]
+    # Trunk = false
+    # AllowedVLANs = [1]
+    # Up = true
 
 # [[ControlProcess]]
 # Layer = 2
@@ -62,17 +62,22 @@ ConfigFile = "etc/l2/ARPConfig.toml"
 [[ControlProcess]]
 Layer = 2
 Name = "L2Adapter"
+ConfigFile = "etc/l2/L2Adapter.toml"
 
 [[ControlProcess]]
 Layer = 3
 Name = "IPv4"
-
 
 [[ControlProcess]]
 Layer = 3
 Name = "ICMP"
 ConfigFile = "etc/l3/ICMPConfig.toml"
 
-[[ControlProcess]]
-Layer = 3
-Name = "L3Adapter"
+# [[ControlProcess]]
+# Layer = 3
+# Name = "Routing"
+# ConfigFile = "etc/l3/RoutingTable.toml"
+#
+# [[ControlProcess]]
+# Layer = 3
+# Name = "L3Adapter"

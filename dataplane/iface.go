@@ -172,7 +172,7 @@ func (s *SwitchPort) SendLoop(close chan int) {
 		default:
 			frame := <-s.OutBuf
 			outFrame := s.setSendVlanTag(frame)
-			log.Printf("sending out of trunk port %s, %v", s.Name, outFrame)
+			log.Printf("sending out of port %s, %v", s.Name, outFrame)
 			if len(outFrame) == 0 {
 				continue
 			}

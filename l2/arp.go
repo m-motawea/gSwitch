@@ -227,14 +227,18 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 		if p.Operation == arp.OperationReply {
 			log.Println("ARP Process: This is ARP Reply")
 			// ARP Reply
-			// Add target ip and mac to ARP Table
-			table.SetEntry(p.TargetIP, p.TargetHardwareAddr, msgContent.InFrame.IN_PORT)
 			// if it is for a local address drop
+			Valid := true
 			for _, addr := range config.LocalAddresses {
 				if addr.IP == targetIP {
 					log.Printf("ARP Process: This is ARP Reply to My IP: %v", addr.IP)
+					Valid = false
 					msg.Drop = true
 				}
+			}
+			if Valid {
+				// Add target ip and mac to ARP Table if not in my addresses
+				table.SetEntry(p.TargetIP, p.TargetHardwareAddr, msgContent.InFrame.IN_PORT)
 			}
 			return msg
 		} else {
@@ -306,6 +310,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 	log.Println("ARP Process: Received IPv4 Frame")
 
 	ipPayload := msgContent.InFrame.FRAME.Payload
+	log.Printf("ARP Resolve Proc: out frame %+v", msgContent.InFrame.FRAME)
 	if len(ipPayload) < 20 {
 		// invalid IPv4 payload
 		log.Printf("ARP Process got invalid IPv4 payload")
@@ -324,6 +329,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 	}
 
 	srcIPStr := srcIP.String()
+	srcMACStr := msgContent.InFrame.FRAME.Source.String()
 	table := stor["Table"].(SwitchARPTable)
 	for iface, addr := range config.LocalAddresses {
 		log.Printf("ARP Resolve Out: Comparing %s with %s", addr.IP, srcIPStr)
@@ -355,6 +361,36 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 			msgContent.InFrame.FRAME.Destination = *dstMac
 			msg.Content = msgContent
 			return msg
+		} else {
+			// if src mac is my mac
+			log.Printf("ARP Resolve Out: Comparing %s with %s", addr.MAC, srcMACStr)
+			if addr.MAC == srcMACStr {
+				log.Printf("ARP Process: (Rotuing) Setting Proper Destination MAC and VLAN for interface %v", iface)
+				// Search for ARP Entry for the destination IP
+				byteMAC, err := net.ParseMAC(addr.MAC)
+				if err != nil {
+					log.Printf("ARP Process: Failed to parse mac addr of local address %v", addr)
+					msg.Drop = true
+					return msg
+				}
+				ent := table.GetEntry(dstIP)
+				if ent != nil {
+					log.Printf("ARP Process: Found ARP Entry for IP: %v, MAC: %v", dstIP, ent.MAC)
+					msgContent.InFrame.FRAME.Destination = ent.MAC
+					msg.Content = msgContent
+					return msg
+				}
+				log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
+				dstMac := ResolveIP(srcIP, dstIP, byteMAC, msgContent.ParentSwitch, table)
+				if dstMac == nil {
+					log.Printf("ARP Process: Unable to resolve IP: %v", dstIP)
+					msg.Drop = true
+					return msg
+				}
+				msgContent.InFrame.FRAME.Destination = *dstMac
+				msg.Content = msgContent
+
+			}
 		}
 	}
 	return msg

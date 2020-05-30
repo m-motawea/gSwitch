@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/m-motawea/gSwitch/controlplane"
-	"github.com/m-motawea/pipeline"
 	"github.com/m-motawea/ip"
+	"github.com/m-motawea/pipeline"
 	"github.com/mdlayher/ethernet"
 )
 
@@ -64,6 +64,7 @@ func EgressIpEncoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage
 		return msg
 	}
 	msgContent.LayerPayload = payload
+	msgContent.InFrame.IN_PORT = nil
 	msg.Content = msgContent
 	return msg
 }

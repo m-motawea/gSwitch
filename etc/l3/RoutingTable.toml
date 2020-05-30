@@ -1,0 +1,19 @@
+[VLANIfaces]
+    [VLANIfaces.VLAN1]
+        IP = "10.1.1.1"
+        MAC = "52:9c:57:5e:40:aa"
+        VLAN = 1
+
+    [VLANIfaces.VLAN10]
+        IP = "10.10.1.1"
+        MAC = "52:e1:47:de:21:2a"
+        VLAN = 10
+
+[Routes]
+    [Routes."10.1.0.0/16"]
+        [[Routes."10.1.0.0/16".Ports]]
+            Name = "VLAN1"
+    
+    [Routes."10.10.0.0/16"]
+        [[Routes."10.10.0.0/16".Ports]]
+            Name = "VLAN10"
