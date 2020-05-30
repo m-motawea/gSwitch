@@ -67,3 +67,6 @@ ip -n h1 route add 10.10.0.0/16 via 10.1.1.1
 ip -n h2 route add 10.10.0.0/16 via 10.1.1.1
 ip -n h3 route add 10.1.0.0/16 via 10.10.1.1
 ip -n h4 route add 10.1.0.0/16 via 10.10.1.1
+
+echo "test environment created successfully!"
+echo "to start the switch use: ip netns exec sw ./gSwitch"
