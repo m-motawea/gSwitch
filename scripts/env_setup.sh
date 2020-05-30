@@ -62,3 +62,8 @@ ip -n h4 addr add 10.10.1.40/24 dev h4
 # ip -n h5 addr add 10.1.1.50/24 dev h5.1
 # ip -n h5 addr add 10.10.1.50/24 dev h5.10
 # ip -n sw addr add 10.1.1.254/24 dev sw
+
+ip -n h1 route add default via 10.1.1.1
+ip -n h2 route add default via 10.1.1.1
+ip -n h3 route add default via 10.10.1.1
+ip -n h4 route add default via 10.10.1.1
