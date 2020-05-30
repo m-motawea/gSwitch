@@ -51,6 +51,8 @@ Control processes are what defines how the traffic is handled by the switch. cur
 
 - `Name`: name of the process
 
+- `ConfigFile`: path to process configuration file (if needed)
+
 
 ## Try It:
 1- Get the Package
@@ -68,10 +70,9 @@ go build
 ```bash
 sudo ./scripts/env_setup.sh
 ```
-* this will create 5 namespaces as hosts (`h1`,..`h5`) and a one as switch `sw`
+* this will create 5 namespaces as hosts (`h1`,..`h4`) and a one as switch `sw`
 * `h1` & `h2` IP address are `10.1.1.10` and `10.1.1.20`
 * `h2` & `h3` IP address are `10.10.1.30` and `10.10.1.40`
-* `h5` IP addresses are `10.1.1.50` and `10.10.1.50` on vlans 1 and 10 respectively
 
 4- Start the switch in the `sw` namepace with the default config in the package:
 ```bash
@@ -79,13 +80,12 @@ sudo ip netns exec sw ./gSwitch
 ```
 * `h1` and `h2` are connected to `sw` as access ports on vlan 1
 * `h3`and `h4`are connected to `sw` as access ports on vlan 10
-* `h5` connected to `sw` as trunk port with allowed vlans 1, 10
-* Control processes include the `L2Switch` only
+* Control processes include the `L2Switch`, `ARP`, `IPv4`, `ICMP` and `Routing` as well as each layer adapter process.
 
 5- Test connectivity example:
 ```bash
 sudo ip netns exec h1 ping 10.1.1.20 # connection to h2
-sudo ip netns exec h4 ping 10.10.1.50 # connection to h5
+sudo ip netns exec h1 ping 10.10.1.40 # connection to h4 (routed)
 ```
 
 6- Clean the test environment:
@@ -93,53 +93,6 @@ sudo ip netns exec h4 ping 10.10.1.50 # connection to h5
 sudo ./scripts/env_destroy.sh
 ```
 
-
-## Extending by Creating a Control Process:
-- The Control process is a pipeline process as described here (https://github.com/m-motawea/pipeline)
-- Control processes define a pair of functions for in and out traffic processing which will be used to create a two way process in the switch pipeline.
-- The content strucure of the PipelineMessage in the switch pipeline is defined in `github.com/m-motawea/l2_switch/controlplane`
-
-```go
-type ControlMessage struct {
-	InFrame      *dataplane.IncomingFrame
-	PreMessage   interface{} // To be able to reconstruct the packet again
-	LayerPayload interface{} // To separate each leayer payload
-	OutPorts     []*dataplane.SwitchPort
-	ParentSwitch *Switch
-}
-```
-
-- Control processes are registered in `proc.go` by importing them as:
-```go
-_ "github.com/m-motawea/gSwitch/l2"
-```
-
-- Control processes implement ```init()``` function in their respective files that registers their pair in the control plane
-```go
-func init() {
-	HubProcFuncPair := controlplane.ControlProcessFuncPair{
-	InFunc:  HubInProc,     // handles ingress traffic 
-        OutFunc: HubOutProc,    // handles egress traffic
-        Init:   HubInitFunc,    // initializes any requirements before the pipeline is started that takes (*controlplane.Switch) as parameter. can be nil 
-	}
-
-	controlplane.RegisterLayerProc(2, "Hub", HubProcFuncPair)
-}
-```
-
-- Each control process has map type storage for their presistence requirements defined as:
-```go
-type ProcStor map[string]interface{}
-```
-
-- Control processes can access their stor using ```ParentSwitch``` in the control message as below:
-```go
-msgContent, _ := msg.Content.(controlplane.ControlMessage)
-stor := msgContent.ParentSwitch.Stor.GetStor(2, "Hub")
-val := stor["number"]
-stor["number"] = val.(int) + 1
-log.Printf("\n\nHub Stor: %v \n\n", stor)
-```
 
 ## TODO:
 1- Try to Fix Trunk Ports (due to stripped vlan tags)
