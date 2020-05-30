@@ -92,6 +92,11 @@ func IngressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 			msg.Finished = true
 		}
 	}
+
+	if !msg.Finished {
+		msg.Drop = true
+	}
+
 	return msg
 }
 
