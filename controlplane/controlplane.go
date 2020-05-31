@@ -11,6 +11,7 @@ type ControlMessage struct {
 	LayerPayload interface{} // To separate each leayer payload
 	OutPorts     []*dataplane.SwitchPort
 	ParentSwitch *Switch
+	NextHop      string // IP address of the next hop (in case of routed traffic)
 }
 
 type ControlProcessFuncPair struct {

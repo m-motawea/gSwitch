@@ -327,7 +327,15 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 		return msg
 	}
 	srcIP := net.IP(ipPayload[12:16])
-	dstIP := net.IP(ipPayload[16:20])
+	dstIP := net.IP{}
+	if msgContent.NextHop != "" {
+		dstIP = net.ParseIP(msgContent.NextHop)
+		if dstIP == nil {
+			dstIP = net.IP(ipPayload[16:20])
+		}
+	} else {
+		dstIP = net.IP(ipPayload[16:20])
+	}
 	log.Printf("ARP Process: SRC IP: %v, DST IP: %v", srcIP, dstIP)
 	// if srcIP is mine set src mac and send ARP Request to get destination mac
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "ARP")

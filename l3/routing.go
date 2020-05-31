@@ -175,6 +175,7 @@ func EgressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 			msgContent.InFrame.FRAME.VLAN = &ethernet.VLAN{ID: iface.VLAN}
 			msgContent.InFrame.FRAME.Source = srcMAC
 			msgContent.InFrame.FRAME.Destination = nil
+			msgContent.NextHop = port.NextHop
 			msg.Content = msgContent
 			log.Printf("Routing Proc: out frame %+v", msgContent.InFrame.FRAME)
 			return msg
