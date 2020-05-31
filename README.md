@@ -114,6 +114,8 @@ AllowedVLANs = [1]
 Up = true
 ```
 
-2- Handle L2 Loops Using `STP`
+2- Implement Next-Hop forwarding
 
-3- Document Current Processes
+3- Handle L2 Loops Using `STP` (needs support for `802.3`)
+
+4- Document Current Processes
