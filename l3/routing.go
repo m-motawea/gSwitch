@@ -86,12 +86,17 @@ func IngressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 	for _, addr := range config.VLANIfaces {
 		if addr.IP == dstIP {
 			log.Printf("Routing: Ingress packet sent to my address %s", addr.IP)
-			i.TTL -= 1
-			msgContent.LayerPayload = i
-			msg.Content = msgContent
 			msg.Finished = false
 			return msg
 		} else if dstMAC == addr.MAC {
+			if i.TTL <= 1 {
+				// TODO: send ICMP Time Exceeded
+				msg.Drop = true
+				return msg
+			}
+			i.TTL -= 1
+			msgContent.LayerPayload = i
+			msg.Content = msgContent
 			msg.Finished = true
 		}
 	}
