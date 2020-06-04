@@ -70,13 +70,14 @@ Name = "IPv4"
 
 [[ControlProcess]]
 Layer = 3
-Name = "ICMP"
-ConfigFile = "etc/l3/ICMPConfig.toml"
+Name = "Routing"
+ConfigFile = "etc/l3/RoutingTable.toml"
 
 [[ControlProcess]]
 Layer = 3
-Name = "Routing"
-ConfigFile = "etc/l3/RoutingTable.toml"
+Name = "ICMP"
+ConfigFile = "etc/l3/ICMPConfig.toml"
+
 
 # [[ControlProcess]]
 # Layer = 3
