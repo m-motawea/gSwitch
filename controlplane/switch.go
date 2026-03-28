@@ -9,6 +9,7 @@ import (
 	"github.com/m-motawea/gSwitch/config"
 	"github.com/m-motawea/gSwitch/dataplane"
 	"github.com/m-motawea/pipeline"
+	"github.com/m-motawea/pipeline/localqueue"
 	"github.com/mdlayher/ethernet"
 )
 
@@ -67,10 +68,14 @@ func (sw *Switch) initSwitch(name string, cfg config.Config, wg *sync.WaitGroup)
 	sw.Ports = map[string]*dataplane.SwitchPort{}
 	sw.dataPlaneChan = make(chan dataplane.IncomingFrame)
 	sw.consumeChannel = make(pipeline.PipelineChannel)
-	pipe, _ := pipeline.NewPipeline("ControlPlanePipeline", true, sw.wg, sw.consumeChannel)
+	sw.closeChan = make(chan int, 2)
+	queue := localqueue.NewLocalQueue()
+	pipe, _ := pipeline.NewPipeline("ControlPlanePipeline", true, sw.wg, queue, sw.consumeChannel)
 	sw.controlPipe = &pipe
 	// add pipeline processes
+	log.Printf("initSwitch: iterating over %d configuration processes...", len(cfg.ControlProcess))
 	for _, procConfig := range cfg.ControlProcess {
+		log.Printf("initSwitch: loading Process Layer %d Name %s", procConfig.Layer, procConfig.Name)
 		// get the pair
 		pair, ok := ControlProcs[procConfig.Layer][procConfig.Name]
 		if !ok {
@@ -139,8 +144,8 @@ func (sw *Switch) SwitchLoop() {
 				LayerPayload: []byte{},
 			}
 			pipeMsg := pipeline.PipelineMessage{
-				Direction: pipeline.PipelineInDirection{},
-				Content:   ctrlMsg,
+				Direction: pipeline.PipelineInDirection,
+				Content:   StoreMessage(ctrlMsg),
 			}
 			sw.controlPipe.SendMessage(pipeMsg)
 			log.Println("Control Plane: message sent to pipeline")
@@ -158,9 +163,9 @@ func (sw *Switch) ConsumerLoop() {
 		case pipeMsg := <-sw.consumeChannel:
 			// processed msg from pipeline
 			log.Println("Control Plane: received pipeline message. sending out to dataplane...")
-			ctrlMsg, ok := pipeMsg.Content.(ControlMessage)
+			ctrlMsg, ok := DropMessage(pipeMsg.Content)
 			if !ok {
-				log.Fatal("Switch Loop Received Incompatible Message!")
+				log.Fatal("Switch Loop Received Incompatible/Missing Message!")
 			}
 			for _, port := range ctrlMsg.OutPorts {
 				log.Printf("Control Plane: sending msg to port %s...", port.Name)
@@ -182,6 +187,7 @@ func (sw *Switch) Stop() {
 	for _, port := range sw.Ports {
 		port.Down()
 	}
+	sw.closeChan <- 1
 	sw.closeChan <- 1
 	sw.controlPipe.Stop()
 }

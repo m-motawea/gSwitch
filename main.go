@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -16,7 +17,7 @@ func main() {
 	}
 	defer f.Close()
 
-	log.SetOutput(f)
+	log.SetOutput(io.MultiWriter(os.Stdout, f))
 	var wg sync.WaitGroup
 	configPath := "config.toml"
 	if len(os.Args) > 1 {

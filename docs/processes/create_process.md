@@ -36,11 +36,19 @@ func init() {
 type ProcStor map[string]interface{}
 ```
 
-- Control processes can access their stor using ```ParentSwitch``` in the control message as below:
+- Control processes can access their stor using `ParentSwitch` inside the deserialized control message. Since moving to the decentralized `localqueue` architecture, messages are sent over channels as 8-byte identifiers in `[]byte` slices. Use `FetchMessage` and `StoreMessage` to retrieve/save pointer references:
 ```go
-msgContent, _ := msg.Content.(controlplane.ControlMessage)
+msgContent, ok := controlplane.FetchMessage(msg.Content)
+if !ok {
+	// handle invalid/dropped message
+	return msg 
+}
+
 stor := msgContent.ParentSwitch.Stor.GetStor(2, "Hub")
 val := stor["number"]
 stor["number"] = val.(int) + 1
 log.Printf("\n\nHub Stor: %v \n\n", stor)
+
+// When modifying the msgContent structure, be sure to store it before returning
+msg.Content = controlplane.StoreMessage(msgContent)
 ```

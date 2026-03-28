@@ -49,11 +49,11 @@ func InitL2Adapter(sw *controlplane.Switch) {
 }
 
 func IngressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	msgContent.PreMessage = msg
 	msgContent.LayerPayload = msgContent.InFrame.FRAME.Payload
 	log.Printf("L2 Adapter Ingress Next Layer Payload: %v", msgContent.LayerPayload)
-	msg.Content = msgContent
+	msg.Content = controlplane.StoreMessage(msgContent)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "L2Adapter")
 	config, ok := stor["CONFIG"].(L2AdapterConfig)
 	if !ok {
@@ -70,7 +70,7 @@ func IngressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 }
 
 func EgressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	lp, ok := msgContent.LayerPayload.([]byte)
 	if !ok {
 		log.Println("L2 Adapter Egress recieved invalid payload from previous process")
@@ -81,7 +81,7 @@ func EgressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 		msgContent.InFrame.FRAME.Payload = lp
 	}
 	// msg.Content = *msgContent.PreMessage
-	msg.Content = msgContent
+	msg.Content = controlplane.StoreMessage(msgContent)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "L2Adapter")
 	config, ok := stor["CONFIG"].(L2AdapterConfig)
 	if !ok {

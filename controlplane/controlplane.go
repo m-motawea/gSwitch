@@ -1,6 +1,10 @@
 package controlplane
 
 import (
+	"encoding/binary"
+	"sync"
+	"sync/atomic"
+
 	"github.com/m-motawea/gSwitch/dataplane"
 	"github.com/m-motawea/pipeline"
 )
@@ -22,8 +26,48 @@ type ControlProcessFuncPair struct {
 
 var ControlProcs map[int]map[string]ControlProcessFuncPair
 
+var (
+	MessageStore sync.Map
+	messageIDSeq atomic.Uint64
+)
+
 func init() {
 	ControlProcs = map[int]map[string]ControlProcessFuncPair{}
+}
+
+// StoreMessage saves the ControlMessage and returns an 8-byte ID for the Pipeline payload
+func StoreMessage(msg ControlMessage) []byte {
+	id := messageIDSeq.Add(1)
+	MessageStore.Store(id, msg)
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, id)
+	return b
+}
+
+// FetchMessage retrieves the original ControlMessage using the byte slice payload
+func FetchMessage(payload []byte) (ControlMessage, bool) {
+	if len(payload) < 8 {
+		return ControlMessage{}, false
+	}
+	id := binary.LittleEndian.Uint64(payload)
+	val, ok := MessageStore.Load(id)
+	if !ok {
+		return ControlMessage{}, false
+	}
+	return val.(ControlMessage), true
+}
+
+// DropMessage deletes the message mapping when fully consumed by the Dataplane natively
+func DropMessage(payload []byte) (ControlMessage, bool) {
+	if len(payload) < 8 {
+		return ControlMessage{}, false
+	}
+	id := binary.LittleEndian.Uint64(payload)
+	val, ok := MessageStore.LoadAndDelete(id)
+	if !ok {
+		return ControlMessage{}, false
+	}
+	return val.(ControlMessage), true
 }
 
 func RegisterLayerProc(layer int, name string, pair ControlProcessFuncPair) {

@@ -1,0 +1,3 @@
+[LocalAddresses]
+  [LocalAddresses.eth0]
+  Address = "10.0.0.1"

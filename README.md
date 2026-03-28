@@ -26,7 +26,31 @@ Prefix = ""
 
 [[ControlProcess]]
 Layer = 2
-Name = "Hub"
+Name = "L2Switch"
+
+[[ControlProcess]]
+Layer = 2
+Name = "ARP"
+ConfigFile = "etc/l2/ARPConfig.toml"
+
+[[ControlProcess]]
+Layer = 2
+Name = "L2Adapter"
+ConfigFile = "etc/l2/L2Adapter.toml"
+
+[[ControlProcess]]
+Layer = 3
+Name = "IPv4"
+
+[[ControlProcess]]
+Layer = 3
+Name = "Routing"
+ConfigFile = "etc/l3/RoutingTable.toml"
+
+[[ControlProcess]]
+Layer = 3
+Name = "ICMP"
+ConfigFile = "etc/l3/ICMPConfig.toml"
 ```
 
 
@@ -45,7 +69,11 @@ This represents the ports that will be added to the switch.
 
 
 #### 3- ControlProcess:
-Control processes are what defines how the traffic is handled by the switch. currently only a `L2Hub` and `L2Switch` are implemented.
+Control processes are what defines how the traffic is handled by the switch. The switch is built heavily around the distributed asynchronous pipeline `github.com/m-motawea/pipeline`.
+
+With the recent shift to the distributed pipeline branch, Goroutine channel bottlenecks were alleviated with the `localqueue` messaging drivers over 8-byte IDs (`MessageStore` centralized registries) rather than pointer traversal.
+
+Currently `L2Switch`, `L2Adapter`, `ARP`, `IPv4`, `Routing`, and `ICMP` processes are beautifully orchestrated and natively interact with one another bidirectionally. Processes are executed iteratively depending on `Layer` and `Name` order during Ingress and Reverse order during Egress.
 
 - `Layer`: represents the layer this process handles
 
@@ -92,6 +120,21 @@ sudo ip netns exec h1 ping 10.10.1.40 # connection to h4 (routed)
 ```bash
 sudo ./scripts/env_destroy.sh
 ```
+
+### Running unit and integration tests locally:
+
+Before executing full integration tests verification, you must be successfully running the `distributed_pipeline` branch of the `github.com/m-motawea/pipeline` framework. This architecture replaces blocking concurrent Go channels with the `localqueue` driver and ID-based message map `StoreMessage()` pointer bypassing logic.
+
+```bash
+go mod edit -dropreplace github.com/m-motawea/pipeline
+go get github.com/m-motawea/pipeline@distributed_pipeline
+```
+
+Run the robust E2E full-stack verification test natively:
+```bash
+go test -v ./controlplane -run TestSwitchEndToEnd_ICMP
+```
+This comprehensive unit test mimics a complete end-to-end framework, sending ICMP Echo Requests resolving dynamically back and forth using physical L2/L3 encapsulation layers and intercepting active dynamic hardware ARP negotiation requests automatically whenever a mapped address table drops.
 
 
 ## TODO:

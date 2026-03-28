@@ -50,7 +50,7 @@ func InitICMP(sw *controlplane.Switch) {
 }
 
 func ICMPProcessIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(3, "ICMP")
 	config, ok := stor["CONFIG"].(ICMPConfig)
 	if !ok {
@@ -91,7 +91,7 @@ func ICMPProcessIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 				}
 				i.Data = data
 				msgContent.LayerPayload = i
-				msg.Content = msgContent
+				msg.Content = controlplane.StoreMessage(msgContent)
 				msg.Finished = true
 				msgContent.InFrame.FRAME.Destination = nil
 				log.Printf("ICMP Proc result ICMP: %+v", ic)

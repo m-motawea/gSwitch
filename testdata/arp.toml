@@ -1,0 +1,4 @@
+[LocalAddresses]
+  [LocalAddresses.eth0]
+  IP = "10.0.0.1"
+  MAC = "aa:bb:cc:dd:ee:ff"

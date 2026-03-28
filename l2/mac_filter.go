@@ -174,7 +174,7 @@ func InitMacFilter(sw *controlplane.Switch) {
 }
 
 func IngressMacFilter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "MACFilter")
 	configObj, ok := stor["CONFIG"].(MACFilterConfig)
 	if !ok {
@@ -192,7 +192,7 @@ func IngressMacFilter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessag
 }
 
 func EgressMacFilter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "MACFilter")
 	configObj, ok := stor["CONFIG"].(MACFilterConfig)
 	if !ok {
