@@ -3,6 +3,7 @@
 * Ingress Adapter function should decide whether the message needs to be passed to upper layer or not (finished).
 * Ingress adapter function sets the `LayerPayload` field to `[]byte` containing the upper layer data in the packet.
 * Egress adapter function sets the `LayerPayload` filed to the payload type used in its layer (`ip.IPv4` in layer3 adapter for example).
-* To be able to recreate the current layer payload when recieving messages from upper layers, in Ingress adapter function you might need to store the current message in the new message that is sent to the upper layer in `PreMessage` of the message content
+* To be able to recreate the current layer payload when receiving messages from upper layers, the Ingress adapter function typically preserves the current message by assigning the entire `pipeline.PipelineMessage` back into the `PreMessage` property of the `ControlMessage`. You retrieve it later recursively on Egress.
+* Because communication is transported via `[]byte` pointer IDs mapped to central sync Registries (such as `StoreMessage`), your Egress adapter should pull operations utilizing `controlplane.FetchMessage(msg.Content)` and ultimately write modified payloads directly with `msg.Content = controlplane.StoreMessage(msgContent)`.
 
-(Checkout `l3/l2_adapter.go` for a complete example)
+(Checkout `l2/layer2_adapter.go` for a complete example)

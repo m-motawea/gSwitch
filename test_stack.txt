@@ -1,0 +1,151 @@
+=== RUN   TestSwitchEndToEnd_ICMP
+2026/03/28 02:41:20 intializing switch: 
+2026/03/28 02:41:20 Creating New Pipeline ControlPlanePipeline with twoWay as true
+2026/03/28 02:41:20 Creating New Process L2:ARP.
+2026/03/28 02:41:20 Process L2:ARP Created
+2026/03/28 02:41:20 Pipeline: Adding Process L2:ARP to Pipeline ControlPlanePipeline
+2026/03/28 02:41:20 Starting ARP Process
+2026/03/28 02:41:20 ARP Process Config file path: ../testdata/arp.toml
+2026/03/28 02:41:20 Creating New Process L3:IPv4.
+2026/03/28 02:41:20 Process L3:IPv4 Created
+2026/03/28 02:41:20 Pipeline: Adding Process L3:IPv4 to Pipeline ControlPlanePipeline
+2026/03/28 02:41:20 Creating New Process L3:ICMP.
+2026/03/28 02:41:20 Process L3:ICMP Created
+2026/03/28 02:41:20 Pipeline: Adding Process L3:ICMP to Pipeline ControlPlanePipeline
+2026/03/28 02:41:20 Starting ICMP Process
+2026/03/28 02:41:20 ICMP Process Config file path: ../testdata/icmp.toml
+2026/03/28 02:41:20 ARP Process: Starting ARP Table Check and Clear Routine..
+2026/03/28 02:41:20 ICMP Config: {map[eth0:{10.0.0.1}]}
+2026/03/28 02:41:20 Creating New Process L3:Routing.
+2026/03/28 02:41:20 Process L3:Routing Created
+2026/03/28 02:41:20 Pipeline: Adding Process L3:Routing to Pipeline ControlPlanePipeline
+2026/03/28 02:41:20 Starting Routing Process
+2026/03/28 02:41:20 Routing Process Config file path: ../testdata/routing.toml
+2026/03/28 02:41:20 Routing Config: {VLANIfaces:map[eth0:{IP:10.0.0.1 MAC:aa:bb:cc:dd:ee:ff VLAN:10}] Routes:map[192.168.20.0/24:{Ports:[{Name:eth0 NextHop:10.0.0.254}]}]}
+2026/03/28 02:41:20 Pipeline: Starting Pipeline ControlPlanePipeline
+2026/03/28 02:41:20 Pipeline: Starting Process L2:ARP with id 0 concurrency worker 0
+2026/03/28 02:41:20 Pipeline: Starting Process L3:IPv4 with id 1 concurrency worker 0
+2026/03/28 02:41:20 Pipeline: Starting Process L3:ICMP with id 2 concurrency worker 0
+2026/03/28 02:41:20 Process: Starting InProcess for L2:ARP id: 0
+2026/03/28 02:41:20 Pipeline: Starting Process L3:Routing with id 3 concurrency worker 0
+2026/03/28 02:41:20 Pipeline ControlPlanePipeline: Staring TwoWay Loop
+2026/03/28 02:41:20 Process: Starting InProcess for L3:ICMP id: 2
+2026/03/28 02:41:20 Process: Starting OutProcess for L3:Routing id: 3
+2026/03/28 02:41:20 Process: Starting InProcess for L3:IPv4 id: 1
+2026/03/28 02:41:20 Process: Starting InProcess for L3:Routing id: 3
+2026/03/28 02:41:20 Process: Starting OutProcess for L3:ICMP id: 2
+2026/03/28 02:41:20 Process: Starting OutProcess for L3:IPv4 id: 1
+2026/03/28 02:41:20 Process: Starting OutProcess for L2:ARP id: 0
+panic: test timed out after 10s
+	running tests:
+		TestSwitchEndToEnd_ICMP (10s)
+
+goroutine 16 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x2c4
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x38
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x223fc019a008, {0x100a18e02?, 0x223fc00e7b18?}, 0x100bbdfe0)
+	/usr/local/go/src/testing/testing.go:2109 +0x3bc
+testing.runTests.func1(0x223fc019a008)
+	/usr/local/go/src/testing/testing.go:2585 +0x38
+testing.tRunner(0x223fc019a008, 0x223fc00e7c48)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+testing.runTests({0x100a1a778, 0x1c}, {0x100a1f2ce, 0x29}, 0x223fc00520f0, {0x100be65e0, 0x3, 0x3}, {0x808080170664021c?, 0x100a1634b?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x3f0
+testing.(*M).Run(0x223fc00ce280)
+	/usr/local/go/src/testing/testing.go:2443 +0x578
+main.main()
+	_testmain.go:52 +0x80
+
+goroutine 5 [chan send (nil chan)]:
+github.com/m-motawea/gSwitch/dataplane.(*SwitchPort).Down(0x223fc00ee5b0)
+	/Users/maged/Code/gSwitch/dataplane/iface.go:263 +0x30
+github.com/m-motawea/gSwitch/controlplane.(*Switch).Stop(0x223fc00741e0)
+	/Users/maged/Code/gSwitch/controlplane/switch.go:186 +0x5c
+github.com/m-motawea/gSwitch/controlplane.TestSwitchEndToEnd_ICMP.func1()
+	/Users/maged/Code/gSwitch/controlplane/switch_test.go:140 +0x24
+github.com/m-motawea/gSwitch/controlplane.TestSwitchEndToEnd_ICMP(0x223fc019a248?)
+	/Users/maged/Code/gSwitch/controlplane/switch_test.go:149 +0x48
+testing.tRunner(0x223fc019a248, 0x100bbdfe0)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+
+goroutine 6 [chan receive]:
+github.com/m-motawea/gSwitch/l2.(*SwitchARPTable).CheckAndClear(0x223fc0052210)
+	/Users/maged/Code/gSwitch/l2/arp.go:125 +0x88
+created by github.com/m-motawea/gSwitch/l2.InitARP in goroutine 5
+	/Users/maged/Code/gSwitch/l2/arp.go:190 +0x4ec
+
+goroutine 7 [select]:
+github.com/m-motawea/pipeline.(*Pipeline).twoWayLoop(0x223fc0196080)
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:239 +0x16c
+github.com/m-motawea/pipeline.(*Pipeline).Start(0x223fc0196080)
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:187 +0x29c
+created by github.com/m-motawea/gSwitch/controlplane.(*Switch).Start in goroutine 5
+	/Users/maged/Code/gSwitch/controlplane/switch.go:179 +0x64
+
+goroutine 8 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).InProcess(0x223fc00c4a00, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:46 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:180 +0x200
+
+goroutine 9 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).OutProcess(0x223fc00c4a00, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:76 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:182 +0x288
+
+goroutine 10 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).InProcess(0x223fc00c4b40, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:46 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:180 +0x200
+
+goroutine 11 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).OutProcess(0x223fc00c4b40, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:76 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:182 +0x288
+
+goroutine 12 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).InProcess(0x223fc00c4b80, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:46 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:180 +0x200
+
+goroutine 13 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).OutProcess(0x223fc00c4b80, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:76 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:182 +0x288
+
+goroutine 14 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).InProcess(0x223fc00c4cc0, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:46 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:180 +0x200
+
+goroutine 15 [select]:
+github.com/m-motawea/pipeline.(*PipelineProcess).OutProcess(0x223fc00c4cc0, {0x100bc1010, 0x223fc0074230}, {0x100bc0ca8, 0x223fc00d8280})
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:76 +0x248
+created by github.com/m-motawea/pipeline.(*Pipeline).Start in goroutine 7
+	/Users/maged/go/pkg/mod/github.com/m-motawea/pipeline@v0.0.0-20260328014020-3cd9b3e1b80e/pipeline.go:182 +0x288
+
+goroutine 20 [select]:
+github.com/m-motawea/gSwitch/controlplane.(*Switch).SwitchLoop(0x223fc00741e0)
+	/Users/maged/Code/gSwitch/controlplane/switch.go:131 +0x230
+created by github.com/m-motawea/gSwitch/controlplane.(*Switch).Start in goroutine 5
+	/Users/maged/Code/gSwitch/controlplane/switch.go:181 +0xb4
+
+goroutine 21 [select]:
+github.com/m-motawea/gSwitch/controlplane.(*Switch).ConsumerLoop(0x223fc00741e0)
+	/Users/maged/Code/gSwitch/controlplane/switch.go:157 +0xc0
+created by github.com/m-motawea/gSwitch/controlplane.(*Switch).SwitchLoop in goroutine 20
+	/Users/maged/Code/gSwitch/controlplane/switch.go:129 +0x64
+FAIL	github.com/m-motawea/gSwitch/controlplane	10.257s
+FAIL

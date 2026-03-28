@@ -72,7 +72,7 @@ func IngressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 
 	*/
 	log.Println("Routing Process: Ingress Recieved a message")
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(3, "Routing")
 	config, ok := stor["CONFIG"].(RoutingTable)
 	if !ok {
@@ -96,7 +96,7 @@ func IngressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 			}
 			i.TTL -= 1
 			msgContent.LayerPayload = i
-			msg.Content = msgContent
+			msg.Content = controlplane.StoreMessage(msgContent)
 			msg.Finished = true
 		}
 	}
@@ -118,7 +118,7 @@ func EgressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 		}
 	*/
 	log.Println("Routing Process: Egress Recieved a message")
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(3, "Routing")
 	config, ok := stor["CONFIG"].(RoutingTable)
 	if !ok {
@@ -184,7 +184,7 @@ func EgressRouting(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 			msgContent.InFrame.FRAME.Source = srcMAC
 			msgContent.InFrame.FRAME.Destination = nil
 			msgContent.NextHop = port.NextHop
-			msg.Content = msgContent
+			msg.Content = controlplane.StoreMessage(msgContent)
 			log.Printf("Routing Proc: out frame %+v", msgContent.InFrame.FRAME)
 			return msg
 		}

@@ -21,7 +21,7 @@ func HubInProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipe
 }
 
 func HubOutProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, ok := msg.Content.(controlplane.ControlMessage)
+	msgContent, ok := controlplane.FetchMessage(msg.Content)
 	if !ok {
 		log.Println("Hub Proc Received Incompatible Message. Discarding..")
 		msg.Drop = true
@@ -38,6 +38,6 @@ func HubOutProc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 		}
 		msgContent.OutPorts = append(msgContent.OutPorts, port)
 	}
-	msg.Content = msgContent
+	msg.Content = controlplane.StoreMessage(msgContent)
 	return msg
 }

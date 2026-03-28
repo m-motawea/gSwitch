@@ -20,30 +20,30 @@ func init() {
 func IngressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	newmsg := pipeline.PipelineMessage{}
 	newmsg = msg
-	msgContent, _ := newmsg.Content.(controlplane.ControlMessage)
-	ip, ok := msgContent.LayerPayload.(ip.IPv4)
+	msgContent, _ := controlplane.FetchMessage(newmsg.Content)
+	ipPayload, ok := msgContent.LayerPayload.(ip.IPv4)
 	if !ok {
 		log.Println("IP Process Ingress recieved invalid payload")
 		msg.Drop = true
 		return msg
 	}
 	msgContent.PreMessage = msg
-	msgContent.LayerPayload = ip.Data
-	newmsg.Content = msgContent
+	msgContent.LayerPayload = ipPayload.Data
+	newmsg.Content = controlplane.StoreMessage(msgContent)
 	log.Printf("L3 Adapter Ingress Msg %+v", newmsg)
 	return newmsg
 }
 
 func EgressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	premsg, ok := msgContent.PreMessage.(pipeline.PipelineMessage)
 	if !ok {
 		log.Println("L3 Adapter Egress Recieved invalid message")
 		msg.Drop = true
 		return msg
 	}
-	premsgContent, _ := premsg.Content.(controlplane.ControlMessage)
-	ip, ok := premsgContent.LayerPayload.(ip.IPv4)
+	premsgContent, _ := controlplane.FetchMessage(premsg.Content)
+	ipPayload, ok := premsgContent.LayerPayload.(ip.IPv4)
 	if !ok {
 		log.Println("IP Process Egress recieved invalid premsg payload")
 		msg.Drop = true
@@ -55,9 +55,9 @@ func EgressAdapter(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 		msg.Drop = true
 		return msg
 	}
-	ip.Data = payload
-	premsgContent.LayerPayload = ip
-	msg.Content = premsgContent
+	ipPayload.Data = payload
+	premsgContent.LayerPayload = ipPayload
+	msg.Content = controlplane.StoreMessage(premsgContent)
 	log.Printf("L3 Adapter Egress Msg %+v", msg)
 	return msg
 }

@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/netip"
 	"sync"
 	"time"
 
@@ -40,7 +41,7 @@ func (ae *ARPEntry) Refresh() {
 }
 
 func (ae *ARPEntry) IsExpired() bool {
-	return ae.LastRefreshed.Add(ARP_EXPIRE_TIME).Sub(time.Now()) < time.Second
+	return time.Until(ae.LastRefreshed.Add(ARP_EXPIRE_TIME)) < time.Second
 }
 
 type SwitchARPTable struct {
@@ -198,7 +199,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 
 	*/
 
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "ARP")
 	config, ok := stor["CONFIG"].(ARPConfig)
 	if !ok {
@@ -234,7 +235,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 			}
 			if Valid {
 				// Add target ip and mac to ARP Table if not in my addresses
-				table.SetEntry(p.SenderIP, p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
+				table.SetEntry(p.SenderIP.AsSlice(), p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
 			}
 			return msg
 		} else if p.Operation == arp.OperationRequest {
@@ -252,7 +253,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 			}
 			if Valid {
 				// Add target ip and mac to ARP Table if not in my addresses
-				table.SetEntry(p.SenderIP, p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
+				table.SetEntry(p.SenderIP.AsSlice(), p.SenderHardwareAddr, msgContent.InFrame.IN_PORT)
 			}
 		}
 
@@ -271,9 +272,9 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 				replyPacket, err := arp.NewPacket(
 					arp.OperationReply,
 					mac,
-					net.ParseIP(addr.IP),
+					netip.MustParseAddr(addr.IP),
 					frame.Source,
-					net.ParseIP(targetIP),
+					netip.MustParseAddr(targetIP),
 				)
 				if err != nil {
 					log.Printf("ARP Process: Failed to create the reply packet err: %v", err)
@@ -297,7 +298,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 				log.Printf("ARP Process preparing result msg....")
 				msgContent.InFrame.FRAME = f
 				msgContent.InFrame.IN_PORT = &dataplane.SwitchPort{}
-				msg.Content = msgContent
+				msg.Content = controlplane.StoreMessage(msgContent)
 				msg.Finished = true
 				log.Printf("ARP Process sending result")
 				return msg
@@ -312,7 +313,7 @@ func ReplyARPIn(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pip
 func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	// This Processes sets the appropriate SRC and DST MAC Address for all IPv4 internal frames
 	log.Println("ARP Resolve proc...")
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	if msgContent.InFrame.FRAME.EtherType != ethernet.EtherTypeIPv4 {
 		return msg
 	}
@@ -366,7 +367,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 			if ent != nil {
 				log.Printf("ARP Process: Found ARP Entry for IP: %v, MAC: %v", dstIP, ent.MAC)
 				msgContent.InFrame.FRAME.Destination = ent.MAC
-				msg.Content = msgContent
+				msg.Content = controlplane.StoreMessage(msgContent)
 				return msg
 			}
 			log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
@@ -377,7 +378,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 				return msg
 			}
 			msgContent.InFrame.FRAME.Destination = *dstMac
-			msg.Content = msgContent
+			msg.Content = controlplane.StoreMessage(msgContent)
 			return msg
 		} else if addr.MAC == srcMACStr {
 			log.Printf("ARP Process: (Rotuing) Setting Proper Destination MAC and VLAN for interface %v", iface)
@@ -392,7 +393,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 			if ent != nil {
 				log.Printf("ARP Process: Found ARP Entry for IP: %v, MAC: %v", dstIP, ent.MAC)
 				msgContent.InFrame.FRAME.Destination = ent.MAC
-				msg.Content = msgContent
+				msg.Content = controlplane.StoreMessage(msgContent)
 				return msg
 			}
 			log.Printf("ARP Process: Couldn't Find ARP Entry for IP: %v. trying to resolve it...", dstIP)
@@ -404,7 +405,7 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 				return msg
 			}
 			msgContent.InFrame.FRAME.Destination = *dstMac
-			msg.Content = msgContent
+			msg.Content = controlplane.StoreMessage(msgContent)
 			return msg
 		}
 	}
@@ -414,12 +415,15 @@ func ResolveARPOut(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) 
 
 func ResolveIP(srcIP net.IP, dstIP net.IP, srcMAC net.HardwareAddr, sw *controlplane.Switch, table SwitchARPTable) *net.HardwareAddr {
 	// build arp frame
+	srcAddr, _ := netip.AddrFromSlice(srcIP.To4())
+	dstAddr, _ := netip.AddrFromSlice(dstIP.To4())
+	
 	p, err := arp.NewPacket(
 		arp.OperationRequest,
 		srcMAC,
-		srcIP,
+		srcAddr,
 		ethernet.Broadcast,
-		dstIP,
+		dstAddr,
 	)
 	if err != nil {
 		log.Printf("ARP Process: Failed to build ARP Request due to error %v", err)
@@ -445,7 +449,7 @@ func ResolveIP(srcIP net.IP, dstIP net.IP, srcMAC net.HardwareAddr, sw *controlp
 	// check switch ARP table until timeout
 	timeout := time.Now().Add(ARP_REQUEST_WAIT_TIME)
 	for {
-		if time.Now().Sub(timeout) > time.Second {
+		if time.Since(timeout) > time.Second {
 			log.Printf("ARP Process: ARP Request for IP: %v Timedout.", dstIP)
 			return nil
 		}

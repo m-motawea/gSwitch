@@ -1,0 +1,4 @@
+[AllowedAddresses]
+  [AllowedAddresses."aa:bb:cc:dd:ee:ff"]
+  Name = "eth0"
+  MAC = "aa:bb:cc:dd:ee:ff"

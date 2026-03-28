@@ -19,7 +19,7 @@ func init() {
 }
 
 func IngressIpDecoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	if msgContent.InFrame.FRAME.EtherType != ethernet.EtherTypeIPv4 {
 		// Accept only IPv4 for now
 		msg.Finished = true
@@ -41,12 +41,12 @@ func IngressIpDecoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessag
 
 	log.Printf("IP Process: decoded IPv4: %+v", ip4)
 	msgContent.LayerPayload = ip4
-	msg.Content = msgContent
+	msg.Content = controlplane.StoreMessage(msgContent)
 	return msg
 }
 
 func EgressIpEncoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	if msgContent.InFrame.FRAME.EtherType != ethernet.EtherTypeIPv4 {
 		// skip non IPv4 packets for now
 		return msg
@@ -65,6 +65,6 @@ func EgressIpEncoder(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage
 	}
 	msgContent.LayerPayload = payload
 	msgContent.InFrame.IN_PORT = nil
-	msg.Content = msgContent
+	msg.Content = controlplane.StoreMessage(msgContent)
 	return msg
 }

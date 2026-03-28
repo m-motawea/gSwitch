@@ -183,7 +183,7 @@ func InitL2Switch(sw *controlplane.Switch) {
 
 func L2SwitchInFunc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	// This process is used to populate the SwitchMACTable Only
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "L2Switch")
 	st := stor["SwitchTable"].(SwitchMACTable)
 
@@ -195,7 +195,7 @@ func L2SwitchInFunc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage)
 
 func L2SwitchOutFunc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage) pipeline.PipelineMessage {
 	// Selection Process for out ports
-	msgContent, _ := msg.Content.(controlplane.ControlMessage)
+	msgContent, _ := controlplane.FetchMessage(msg.Content)
 	stor := msgContent.ParentSwitch.Stor.GetStor(2, "L2Switch")
 	st := stor["SwitchTable"].(SwitchMACTable)
 	frame := msgContent.InFrame.FRAME
@@ -203,6 +203,6 @@ func L2SwitchOutFunc(proc pipeline.PipelineProcess, msg pipeline.PipelineMessage
 	outPorts := st.GetOutPort(frame, msgContent.ParentSwitch, inPort)
 
 	msgContent.OutPorts = outPorts
-	msg.Content = msgContent
+	msg.Content = controlplane.StoreMessage(msgContent)
 	return msg
 }
