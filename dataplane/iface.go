@@ -6,10 +6,8 @@ import (
 	"time"
 
 	"github.com/mdlayher/ethernet"
-	"github.com/mdlayher/raw"
 )
 
-const ETH_P_ALL = 0x0003
 const IFACE_BUFFER_SIZE = 50
 const TYPE_802_1Q = 0x8100
 
@@ -22,7 +20,7 @@ type Iface interface {
 type SwitchPort struct {
 	Name         string
 	IFI          *net.Interface
-	Conn         *raw.Conn
+	Conn         *PacketConn
 	VLAN         int
 	Status       bool
 	OutBuf       chan *ethernet.Frame
@@ -33,12 +31,17 @@ type SwitchPort struct {
 }
 
 type IncomingFrame struct {
-	FRAME    *ethernet.Frame
-	SRC_ADDR net.Addr
-	IN_PORT  *SwitchPort
+	FRAME   *ethernet.Frame
+	IN_PORT *SwitchPort
 }
 
-func (s *SwitchPort) setSendVlanTag(f *ethernet.Frame) []byte {
+func (s *SwitchPort) setSendVlanTag(frame *ethernet.Frame) []byte {
+	// The same *ethernet.Frame is handed to every output port (e.g. when
+	// flooding), and each port's SendLoop runs concurrently. Work on a copy so
+	// an access port stripping the tag can't make a trunk port re-tag the
+	// frame with the native VLAN.
+	f := &ethernet.Frame{}
+	*f = *frame
 	if s.Trunk {
 		log.Printf("sending out of trunk port %s", s.Name)
 		// In case of Trunk Port
@@ -116,7 +119,7 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 	var f ethernet.Frame
 	if err := (&f).UnmarshalBinary(frame); err != nil {
 		log.Printf("failed to unmarshal ethernet frame: %v", err)
-		return &f
+		return nil
 	}
 
 	if s.Trunk {
@@ -124,10 +127,10 @@ func (s *SwitchPort) setRecvVlanTag(frame []byte) *ethernet.Frame {
 		log.Printf("receiving on trunk port %s", s.Name)
 		if f.VLAN == nil {
 			// if no vlan tag added it will add the Native VLAN tag
-			log.Printf("trunk port %s receiving: no vlan tag assigned. assigning native vlan %d", s.Name, s.AllowedVLANs[0])
 			if len(s.AllowedVLANs) == 0 {
 				return nil
 			}
+			log.Printf("trunk port %s receiving: no vlan tag assigned. assigning native vlan %d", s.Name, s.AllowedVLANs[0])
 			vlan := ethernet.VLAN{ID: uint16(s.AllowedVLANs[0])}
 			f.VLAN = &vlan
 			return &f
@@ -176,7 +179,7 @@ func (s *SwitchPort) SendLoop(close chan int) {
 			if len(outFrame) == 0 {
 				continue
 			}
-			n, err := s.Conn.WriteTo(outFrame, s.Conn.LocalAddr())
+			n, err := s.Conn.WriteFrame(outFrame)
 			if err != nil {
 				log.Printf("Failed to send frame out of interface %s due toi error: %t", s.Name, err)
 			}
@@ -193,21 +196,22 @@ func (s *SwitchPort) RecvLoop(controlChannel chan IncomingFrame, close chan int)
 		case <-close:
 			return
 		default:
-			buf := make([]byte, s.IFI.MTU)
-			n, addr, err := s.Conn.ReadFrom(buf)
+			// MTU excludes the Ethernet header; leave room for the header,
+			// a stacked (QinQ) tag and the tag ReadFrame re-inserts.
+			buf := make([]byte, s.IFI.MTU+14+2*vlanTagLen)
+			data, err := s.Conn.ReadFrame(buf)
 			if err != nil {
-				log.Printf("Failed to receive on interface %s due to error: %t", s.Name, err)
+				log.Printf("Failed to receive on interface %s due to error: %v", s.Name, err)
 			} else {
-				log.Printf("%d bytes received on port %s", n, s.Name)
-				frame := s.setRecvVlanTag(buf[:n])
-				log.Printf("frame with VLAN %v", frame.VLAN)
+				log.Printf("%d bytes received on port %s", len(data), s.Name)
+				frame := s.setRecvVlanTag(data)
 				if frame == nil {
 					continue
 				}
+				log.Printf("frame with VLAN %v", frame.VLAN)
 				f_pair := IncomingFrame{
-					FRAME:    frame,
-					SRC_ADDR: addr,
-					IN_PORT:  s,
+					FRAME:   frame,
+					IN_PORT: s,
 				}
 				controlChannel <- f_pair
 			}
@@ -244,7 +248,7 @@ func NewSwitchPort(ifname string, isTrunk bool, vlans ...int) (SwitchPort, error
 }
 
 func (s *SwitchPort) Up(controlChannel chan IncomingFrame) error {
-	c, err := raw.ListenPacket(s.IFI, ETH_P_ALL, nil)
+	c, err := ListenPacket(s.IFI)
 	if err != nil {
 		log.Printf("Failed to listen on port %s due to error %t", s.Name, err)
 		return err
