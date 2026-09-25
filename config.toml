@@ -26,16 +26,12 @@ Prefix = ""
     AllowedVLANs = [10]
     Up = true
 
-    # [SwitchPorts."sw5.10"]
-    # Trunk = false
-    # AllowedVLANs = [10]
-    # Up = true
-    # 
-    # [SwitchPorts."sw5.1"]
-    # Trunk = false
-    # AllowedVLANs = [1]
-    # Up = true
-    # 
+    # trunk to h5. The first VLAN is the native VLAN (untagged frames).
+    [SwitchPorts.sw5]
+    Trunk = true
+    AllowedVLANs = [1, 10]
+    Up = true
+
     # [SwitchPorts.sw-mgmt]
     # Trunk = false
     # AllowedVLANs = [1]
